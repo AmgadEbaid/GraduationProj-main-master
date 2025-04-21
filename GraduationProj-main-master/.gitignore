@@ -57,3 +57,4 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 graduation-project/config.env
 config.env
+/Volumes/work/Projects/furnistore/GraduationProj-main-master/config.env
