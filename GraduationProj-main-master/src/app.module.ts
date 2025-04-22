@@ -7,26 +7,44 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'entities/User';
 import { Otp } from 'entities/Otp';
 import { APP_PIPE } from '@nestjs/core';
-
+import { Address } from 'entities/Address';
+import { Order } from 'entities/Order';
+import { Product } from 'entities/Product';
+import { AddressController } from './address/address.controller';
+import { JwtModule } from '@nestjs/jwt';
+import { AddressModule } from './address/address.module';
 
 @Module({
-  imports: [ TypeOrmModule.forRoot({
-    type: 'mysql',
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT, 10),
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    synchronize: true,
-    logging: true,
-    entities: [User, Otp],
-  }),UserModule, AuthModule],
-  controllers: [AppController],
-  providers: [ {
-    provide: APP_PIPE,
-    useValue: new ValidationPipe({
-      whitelist: true,
+  imports: [
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '9d' },
     }),
-  },AppService],
+    TypeOrmModule.forRoot({
+      type: 'mysql',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      synchronize: true,
+      logging: true,
+      entities: [User, Otp, Address, Order, Product],
+    }),
+    UserModule,
+    AuthModule,
+    UserModule,
+    AddressModule,
+  ],
+  controllers: [AppController],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+      }),
+    },
+    AppService,
+  ],
 })
 export class AppModule {}

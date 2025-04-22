@@ -19,64 +19,82 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: createUser })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User registered successfully and OTP sent',
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Account created successfully. OTP sent to your email for verification.' },
+        message: {
+          type: 'string',
+          example:
+            'Account created successfully. OTP sent to your email for verification.',
+        },
         email: { type: 'string', example: 'user@example.com' },
-        expiresAt: { type: 'string', format: 'date-time', example: '2025-03-15T16:20:00.000Z' },
-        accountStatus: { type: 'string', example: 'pending_verification' }
-      }
-    }
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-03-15T16:20:00.000Z',
+        },
+        accountStatus: { type: 'string', example: 'pending_verification' },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
-  @Post('singup')
-  async singup(@Body() User: createUser) {
-    const singupUser = await this.authservice.signUp(User);
+  @Post('signup')
+  async signup(@Body() User: createUser) {
+    const signupUser = await this.authservice.signUp(User);
 
-    const otp: Otp = await this.otpService.createOtp(singupUser.email);
+    const otp: Otp = await this.otpService.createOtp(signupUser.email);
     return {
-      message: 'Account created successfully. OTP sent to your email for verification.',
+      message:
+        'Account created successfully. OTP sent to your email for verification.',
       email: otp.email,
       expiresAt: otp.expiresAt,
-      accountStatus: 'pending_verification'
+      accountStatus: 'pending_verification',
     };
   }
 
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Login successful',
     schema: {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Login successful' },
-        user: { 
+        user: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'c620ff1a-aeb5-4d52-b15e-f6d2e5e16f5c' },
+            id: {
+              type: 'string',
+              example: 'c620ff1a-aeb5-4d52-b15e-f6d2e5e16f5c',
+            },
             email: { type: 'string', example: 'user@example.com' },
             name: { type: 'string', example: 'John Doe' },
-            status: { type: 'string', example: 'active' }
-          }
+            status: { type: 'string', example: 'active' },
+          },
         },
-        access_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
-      }
-    }
+        access_token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid credentials',
+  })
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     // Validate user credentials
     const user = await this.authservice.validateUser(loginDto);
-    
+
     // Generate JWT token
     const authResult = await this.authservice.login(user);
-    
+
     return {
       message: 'Login successful',
       user: {
@@ -91,22 +109,29 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Request password reset OTP' })
   @ApiBody({ type: ForgotPasswordDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Password reset OTP sent',
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Password reset OTP sent to your email' },
+        message: {
+          type: 'string',
+          example: 'Password reset OTP sent to your email',
+        },
         email: { type: 'string', example: 'user@example.com' },
-        expiresAt: { type: 'string', format: 'date-time', example: '2025-03-15T16:20:00.000Z' }
-      }
-    }
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-03-15T16:20:00.000Z',
+        },
+      },
+    },
   })
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     const otp = await this.authservice.forgotPassword(forgotPasswordDto.email);
-    
+
     return {
       message: 'Password reset OTP sent to your email',
       email: otp.email,
@@ -116,26 +141,29 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Reset password using OTP' })
   @ApiBody({ type: ResetPasswordDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Password reset successful',
     schema: {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Password reset successful' },
-        email: { type: 'string', example: 'user@example.com' }
-      }
-    }
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid OTP or expired OTP' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid OTP or expired OTP',
+  })
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     const user = await this.authservice.resetPassword(
       resetPasswordDto.email,
       resetPasswordDto.otp,
-      resetPasswordDto.newPassword
+      resetPasswordDto.newPassword,
     );
-    
+
     return {
       message: 'Password reset successful',
       email: user.email,

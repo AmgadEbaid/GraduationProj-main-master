@@ -1,21 +1,30 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from './User';
 
-@Entity({ name: 'order' })
-export class Order {
+@Entity({ name: 'address' })
+export class Address {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   fullName: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   streetAddress: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   city: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   state: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   country: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar', nullable: true })
   postalCode: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   phoneNumber: string;
+  @ManyToOne(() => User, (user) => user.addresses)
+  user: User;
 }

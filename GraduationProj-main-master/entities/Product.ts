@@ -4,7 +4,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column({ type: 'string', nullable: false })
+  @Column({ type: 'varchar', nullable: false })
   name: string;
   @Column({ type: 'float', nullable: false })
   price: number;

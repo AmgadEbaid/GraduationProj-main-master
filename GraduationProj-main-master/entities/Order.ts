@@ -4,7 +4,7 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column({ type: 'string' })
+  @Column({ type: 'varchar' })
   name: string;
   @Column({ type: 'float', nullable: false })
   price: number;
