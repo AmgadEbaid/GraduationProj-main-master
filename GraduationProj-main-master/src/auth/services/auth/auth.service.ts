@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'entities/User';
@@ -34,7 +40,7 @@ export class AuthService {
     }
     const hashedPassword = await bcrypt.hash(user.password, 10);
     user.password = hashedPassword;
-   
+
     return this.userservice.create(user);
   }
 
@@ -46,7 +52,9 @@ export class AuthService {
       email: user.email,
       status: user.status,
       isOAuthUser: user.isOAuthUser,
-      access_token: this.jwtService.sign(payload, { expiresIn: '1d' }),
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: '1d',
+      }),
     };
   }
 
@@ -59,7 +67,15 @@ export class AuthService {
     // Find user with password included
     const user = await this.User.findOne({
       where: { email: loginDto.email },
-      select: ['id', 'email', 'password', 'name', 'status', 'phone', 'isOAuthUser'],
+      select: [
+        'id',
+        'email',
+        'password',
+        'name',
+        'status',
+        'phone',
+        'isOAuthUser',
+      ],
     });
 
     if (!user) {
@@ -68,23 +84,30 @@ export class AuthService {
 
     // Check if this is an OAuth user trying to use password login
     if (user.isOAuthUser) {
-      throw new UnauthorizedException('This account uses Google Sign-In. Please sign in with Google.');
+      throw new UnauthorizedException(
+        'This account uses Google Sign-In. Please sign in with Google.',
+      );
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
     // Check if user is verified
     if (!user.status) {
-      throw new UnauthorizedException('Email not verified. Please verify your email first.');
+      throw new UnauthorizedException(
+        'Email not verified. Please verify your email first.',
+      );
     }
 
     // Remove password from returned user object
     delete user.password;
-    
+
     return user;
   }
 
@@ -102,7 +125,9 @@ export class AuthService {
 
     // Check if this is an OAuth user
     if (user.isOAuthUser) {
-      throw new BadRequestException('This account uses Google Sign-In. Password reset is not available.');
+      throw new BadRequestException(
+        'This account uses Google Sign-In. Password reset is not available.',
+      );
     }
 
     // Generate and send OTP
@@ -116,22 +141,28 @@ export class AuthService {
    * @param newPassword The new password
    * @returns The updated user
    */
-  async resetPassword(email: string, otp: string, newPassword: string): Promise<User> {
+  async resetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+  ): Promise<User> {
     // Verify OTP
     const user = await this.otpService.verifyOtp(email, otp);
-    
+
     // Check if this is an OAuth user
     if (user.isOAuthUser) {
-      throw new BadRequestException('This account uses Google Sign-In. Password reset is not available.');
+      throw new BadRequestException(
+        'This account uses Google Sign-In. Password reset is not available.',
+      );
     }
-    
+
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
+
     // Update user's password
     user.password = hashedPassword;
     await this.User.save(user);
-    
+
     // Return user without password
     delete user.password;
     return user;
@@ -145,9 +176,17 @@ export class AuthService {
    */
   async googleLogin(googleUser: GoogleUser) {
     // Check if user exists
-    let user = await this.User.findOne({ 
+    let user = await this.User.findOne({
       where: { email: googleUser.email },
-      select: ['id', 'email', 'name', 'status', 'phone', 'isOAuthUser', 'password']
+      select: [
+        'id',
+        'email',
+        'name',
+        'status',
+        'phone',
+        'isOAuthUser',
+        'password',
+      ],
     });
 
     if (!user) {
@@ -166,7 +205,9 @@ export class AuthService {
     } else {
       // Check if this is a password user trying to use OAuth
       if (!user.isOAuthUser) {
-        throw new ConflictException('This email is already registered with password authentication. Please use password login.');
+        throw new ConflictException(
+          'This email is already registered with password authentication. Please use password login.',
+        );
       }
 
       // If user exists but isn't verified, verify them

@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 dotenv.config({
-  path: 'config.env',
+  path: '/Volumes/work/Projects/furnistore/GraduationProj-main-master/config.env',
 });
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -10,7 +10,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable CORS for frontend requests
   app.enableCors({
     origin: ['http://localhost:3000', 'http://localhost:3002'], // Add your frontend URLs
@@ -18,7 +18,7 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
-  
+
   // Configure Swagger
   const config = new DocumentBuilder()
     .setTitle('Authentication API')
@@ -39,7 +39,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-  
+
   // Configure session middleware for OAuth
   app.use(
     session({
@@ -51,16 +51,18 @@ async function bootstrap() {
       },
     }),
   );
-  
+
   // Initialize Passport
   app.use(passport.initialize());
   app.use(passport.session());
-  
+
   // Log the port the application is running on
   const port = process.env.PORT ?? 3001;
   console.log(`Application running on port ${port}`);
-  console.log(`Swagger documentation available at http://localhost:${port}/api`);
-  
+  console.log(
+    `Swagger documentation available at http://localhost:${port}/api`,
+  );
+
   await app.listen(port);
 }
 bootstrap();

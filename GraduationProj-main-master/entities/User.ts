@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Address } from './Address';
 
 @Entity({ name: 'user' })
 export class User {
@@ -24,4 +25,7 @@ export class User {
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
   isOAuthUser: boolean;
+
+  @OneToMany(() => Address, (address) => address.user)
+  addresses: Address[];
 }

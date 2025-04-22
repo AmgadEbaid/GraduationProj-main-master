@@ -1,4 +1,11 @@
-import { IsEmail, IsPhoneNumber, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsPhoneNumber,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class createUser {
@@ -7,7 +14,7 @@ export class createUser {
     example: 'amgad',
     minLength: 4,
     maxLength: 20,
-    required: true
+    required: true,
   })
   @IsString()
   @MinLength(4)
@@ -17,16 +24,17 @@ export class createUser {
   @ApiProperty({
     description: 'User email address',
     example: 'amgadabdo@gmail.com',
-    required: true
+    required: true,
   })
   @IsEmail()
   email: string;
 
   @ApiProperty({
-    description: 'User password (min 6 characters, must include uppercase, lowercase, number, and special character)',
+    description:
+      'User password (min 6 characters, must include uppercase, lowercase, number, and special character)',
     example: '13123Arc@12e',
     required: true,
-    minLength: 6
+    minLength: 6,
   })
   @MinLength(6, {
     message: 'Password must be at least 6 characters long',
@@ -48,8 +56,9 @@ export class createUser {
   @ApiProperty({
     description: 'User phone number',
     example: '12341353214',
-    required: true
+    required: true,
   })
+  @IsPhoneNumber('EG')
   @IsString()
   phone: string;
 }
