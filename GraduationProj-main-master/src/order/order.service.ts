@@ -11,18 +11,22 @@ export class OrderService {
   @InjectRepository(Product) private Product: Repository<Product>;
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
-    let products: Product[];
+    let products: Product[] = [];
     let price: number = 0;
     let name: string = '';
-    createOrderDto.productIds.forEach(async (productId) => {
+    for (const productId of createOrderDto.productIds) {
       const product = await this.Product.findOne({ where: { id: productId } });
       if (!product) {
-        throw new Error(`Product with id ${productId} not found`);
+        throw new HttpException(
+          `Product with id ${productId} not found`,
+          HttpStatus.NOT_FOUND,
+        );
       }
+
       products.push(product);
       price += product.price;
       name = product.name + ' ' + name;
-    });
+    }
 
     const order = this.Order.create({
       products,
@@ -83,6 +87,8 @@ export class OrderService {
         HttpStatus.NOT_FOUND,
       );
     }
+
+    order.price = order.price - product.price;
     order.products = order.products.filter((p) => p.id !== productId);
     await this.Order.save(order);
     return {
@@ -93,18 +99,19 @@ export class OrderService {
   }
   async delete(id: string, userId: string) {
     const { order } = await this.checkId(id, userId);
+    await this.Product.update({ order: { id: order.id } }, { order: null });
     await this.Order.remove(order);
     return;
   }
   private async checkId(orderId: string, userId: string) {
     const order = await this.Order.findOne({
       where: { id: orderId },
-      relations: ['user'],
-      select: ['id', 'user'],
+      relations: ['user', 'products'],
+      select: ['id', 'user', 'products', 'price', 'name'],
     });
 
     if (!order || !(order.user.id === userId))
-      throw new HttpException('address not found', HttpStatus.NOT_FOUND);
+      throw new HttpException('Not valid order id', HttpStatus.NOT_FOUND);
     return { order };
   }
 }

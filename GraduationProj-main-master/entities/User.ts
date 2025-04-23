@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Address } from './Address';
 import { Order } from './Order';
 import { Review } from './review';
@@ -32,6 +38,6 @@ export class User {
   addresses: Address[];
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
-   @ManyToOne(() => Review, (review) => review.product)
-    review:Review;
+  @OneToMany(() => Review, (review) => review.product)
+  review: Review[];
 }

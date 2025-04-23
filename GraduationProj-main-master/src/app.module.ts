@@ -15,6 +15,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AddressModule } from './address/address.module';
 import { OrderModule } from './order/order.module';
 import { ReviewModule } from './review/review.module';
+import { Review } from 'entities/review';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { ReviewModule } from './review/review.module';
       database: process.env.DB_NAME,
       synchronize: true,
       logging: true,
-      entities: [User, Otp, Address, Order, Product],
+      entities: [User, Otp, Address, Order, Product, Review],
     }),
     UserModule,
     AuthModule,
