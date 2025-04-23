@@ -1,4 +1,6 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Order } from './Order';
+import { Review } from './review';
 
 @Entity({ name: 'product' })
 export class Product {
@@ -10,6 +12,9 @@ export class Product {
   price: number;
   @Column()
   imageUrl: string;
-
-  //   @OneToMany(()=>)
+  @ManyToOne(() => Order, (order) => order.products)
+  order: Order;
+  @ManyToOne(() => Review, (review) => review.product)
+  review:Review
 }
+ 
