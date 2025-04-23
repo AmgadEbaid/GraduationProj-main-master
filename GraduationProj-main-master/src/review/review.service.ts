@@ -11,13 +11,17 @@ export class ReviewService {
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
   ) {}
-  create(createReviewDto: CreateReviewDto) {
-    const review = this.reviewRepository.create(createReviewDto);
+  create(createReviewDto: CreateReviewDto, userId: string, productId: string) {
+    const review = this.reviewRepository.create({
+      ...createReviewDto,
+      user: { id: userId },
+      product: { id: productId },
+    });
     this.reviewRepository.save(review);
     return {
       status: 'success',
       message: 'Review created successfully',
-      review,
+      data: { ...review },
     };
   }
 
@@ -32,21 +36,42 @@ export class ReviewService {
     });
 
     if (!reviews.length) {
-      throw new HttpException(
-        'No reviews found for this product',
-        HttpStatus.NOT_FOUND,
-      );
+      return {
+        status: 'success',
+        message: 'No reviews found',
+      };
     }
     return {
       status: 'success',
       message: 'Reviews fetched successfully',
-      data: reviews,
+      data: { ...reviews },
     };
   }
-  async findOne(id: number) {
+  async getAllReviewsByUser(userId: string) {
+    const reviews = await this.reviewRepository.find({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
+    if (!reviews.length) {
+      return {
+        status: 'success',
+        message: 'No reviews found',
+      };
+    }
+    return {
+      status: 'success',
+      message: 'Reviews fetched successfully',
+      data: { ...reviews },
+    };
+  }
+
+  async findOne(id: string) {
     const review = await this.reviewRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ['user', 'product'],
     });
 
     if (!review) {
@@ -60,7 +85,7 @@ export class ReviewService {
     };
   }
 
-  async update(id: number, updateReviewDto: UpdateReviewDto, userId: string) {
+  async update(id: string, updateReviewDto: UpdateReviewDto, userId: string) {
     const review = await this.reviewRepository.findOne({
       where: { id },
       relations: ['user'],
@@ -84,7 +109,7 @@ export class ReviewService {
     };
   }
 
-  async remove(id: number, userId: string) {
+  async remove(id: string, userId: string) {
     const review = await this.reviewRepository.findOne({
       where: { id },
       relations: ['user'],

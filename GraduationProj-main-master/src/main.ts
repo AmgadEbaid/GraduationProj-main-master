@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 dotenv.config({
-  path: 'H:/furni_swap/GraduationProj-main-master/GraduationProj-main-master/config.env',
+  path: '../config.env',
 });
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';

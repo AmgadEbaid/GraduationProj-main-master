@@ -18,27 +18,28 @@ import { Request } from 'express';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Post()
+  @Post('create')
   create(@Body() createOrderDto: CreateOrderDto, @Req() req: Request) {
     const user = req['user'] as any;
     return this.orderService.create(createOrderDto, user.id);
   }
 
-  @Get()
+  @Get('getAll')
   findAll(@Req() req: Request) {
     const user = req['user'] as any;
     return this.orderService.findAll(user.id);
   }
 
-  @Get(':id')
+  @Get('getOne/:id')
   findOne(@Param('id') id: string) {
     return this.orderService.findOne(id);
   }
 
-  @Delete(':orderId/:productId')
+  // remove product from the cart of the order
+  @Delete('delete/:orderId/:productId')
   remove(
-    @Param('orderId') orderId: string,
     @Req() req: Request,
+    @Param('orderId') orderId: string,
     @Param('productId') productId: string,
   ) {
     const user = req['user'] as any;
@@ -48,7 +49,8 @@ export class OrderController {
       user.id,
     );
   }
-  @Delete(':id')
+  // Delete the whole order
+  @Delete('delete/:id')
   removeOrder(@Param('id') id: string, @Req() req: Request) {
     const user = req['user'] as any;
     return this.orderService.delete(id, user.id);

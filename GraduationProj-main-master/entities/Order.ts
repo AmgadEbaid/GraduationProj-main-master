@@ -1,8 +1,14 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Product } from './Product';
 import { User } from './User';
 
-@Entity({ name: 'order' })
+@Entity({ name: 'orders' })
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -10,9 +16,8 @@ export class Order {
   name: string;
   @Column({ type: 'float', nullable: false })
   price: number;
-  @OneToMany(() => Product, (product) => product.id)
+  @OneToMany(() => Product, (product) => product.order)
   products: Product[];
   @ManyToOne(() => User, (user) => user.orders)
   user: User;
-
 }

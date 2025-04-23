@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Order } from './Order';
 import { Review } from './review';
 
@@ -14,7 +20,6 @@ export class Product {
   imageUrl: string;
   @ManyToOne(() => Order, (order) => order.products)
   order: Order;
-  @ManyToOne(() => Review, (review) => review.product)
-  review:Review
+  @OneToMany(() => Review, (review) => review.product)
+  review: Review[];
 }
- 
