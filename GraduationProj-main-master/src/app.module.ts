@@ -13,6 +13,8 @@ import { Product } from 'entities/Product';
 import { AddressController } from './address/address.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { AddressModule } from './address/address.module';
+import { OrderModule } from './order/order.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { AddressModule } from './address/address.module';
     AuthModule,
     UserModule,
     AddressModule,
+    OrderModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [

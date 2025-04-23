@@ -27,7 +27,6 @@ export class AddressService {
     const addresses = await this.Address.find({
       where: { user: { id: userId } },
     });
-
     return { addresses };
   }
 
