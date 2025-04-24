@@ -8,6 +8,7 @@ import {
 import { Address } from './Address';
 import { Order } from './Order';
 import { Review } from './review';
+import { Product } from './Product';
 
 @Entity({ name: 'user' })
 export class User {
@@ -33,7 +34,8 @@ export class User {
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
   isOAuthUser: boolean;
-
+  @OneToMany(() => Product, (product) => product.user)
+  products: Product[];
   @OneToMany(() => Address, (address) => address.user)
   addresses: Address[];
   @OneToMany(() => Order, (order) => order.user)
