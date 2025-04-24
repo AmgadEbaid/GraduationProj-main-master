@@ -16,6 +16,7 @@ import { AddressModule } from './address/address.module';
 import { OrderModule } from './order/order.module';
 import { ReviewModule } from './review/review.module';
 import { Review } from 'entities/review';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { Review } from 'entities/review';
     AddressModule,
     OrderModule,
     ReviewModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [
