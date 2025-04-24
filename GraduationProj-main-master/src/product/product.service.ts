@@ -1,9 +1,14 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Product, ProductType } from 'entities/Product';
-import { Repository } from 'typeorm';
+import { Product, ProductStatus, ProductType } from 'entities/Product';
+import { Not, Repository } from 'typeorm';
 @Injectable()
 export class ProductService {
   constructor(
@@ -57,9 +62,30 @@ export class ProductService {
       data: { products },
     };
   }
+  async myListings(userId: string) {
+    const products = await this.ProductRepository.find({
+      where: {
+        user: {
+          id: userId,
+        },
+        status: ProductStatus.AVAILABLE,
+      },
+    });
+    if (!products.length) {
+      return {
+        status: 'success',
+        message: 'No products found',
+      };
+    }
+    return {
+      status: 'success',
+      message: 'Products fetched successfully',
+      data: { products },
+    };
+  }
   async findAllProductByType(type: ProductType) {
     const products = await this.ProductRepository.find({
-      where: { type }, 
+      where: { type },
     });
     if (!products.length) {
       return {
@@ -93,15 +119,18 @@ export class ProductService {
 
   async update(id: string, updateProductDto: UpdateProductDto, userId: string) {
     const product = await this.ProductRepository.findOne({
-      where: { id },
+      where: {
+        id,
+        status: Not(ProductStatus.SOLD), // Ensure the status is not "SOLD"
+      },
       relations: ['user'],
     });
     // Check if the product exists (security check)
     if (!product) {
-      return {
-        status: 'success',
-        message: 'No product found',
-      };
+      throw new HttpException(
+        'There is no product with that id, or you are not authourized to updated this product',
+        HttpStatus.NOT_FOUND,
+      );
     }
     // Check if the user is the owner of the product
     if (product.user.id !== userId) {

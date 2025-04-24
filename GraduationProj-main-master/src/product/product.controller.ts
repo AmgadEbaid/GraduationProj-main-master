@@ -15,36 +15,43 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
 import { ProductType } from 'entities/Product';
-@UseGuards(JwtAuthGuard)
+
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
-
+  @UseGuards(JwtAuthGuard)
   @Post('create')
   create(@Body() createProductDto: CreateProductDto, @Req() req: Request) {
     const user = req['user'] as any;
     return this.productService.create(createProductDto, user.id);
   }
 
-  @Get('AllProducts')
+  @Get('all')
   findAllProduct() {
     return this.productService.findAllProduct();
   }
-  @Get('AllProductsByUser')
+  @UseGuards(JwtAuthGuard)
+  @Get('allProductsByUser')
   findAllProductByUser(@Req() req: Request) {
     const user = req['user'] as any;
     return this.productService.findAllProductByUser(user.id);
   }
-  @Get('AllProductsByType/:type')
+  @Get('allProductsByType/:type')
   findAllProductByType(@Param('type') type: ProductType) {
     return this.productService.findAllProductByType(type);
   }
-  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @Get('availableProducts')
+  findAvailableProducts(@Req() req: Request) {
+    const user = req['user'] as any;
+    return this.productService.myListings(user.id);
+  }
+  @Get('getOne/:id')
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
-
-  @Patch('update:id')
+  @UseGuards(JwtAuthGuard)
+  @Patch('update/:id')
   update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
@@ -53,8 +60,8 @@ export class ProductController {
     const user = req['user'] as any;
     return this.productService.update(id, updateProductDto, user.id);
   }
-
-  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete/:id')
   remove(@Param('id') id: string, @Req() req: Request) {
     const user = req['user'] as any;
     return this.productService.remove(id, user.id);

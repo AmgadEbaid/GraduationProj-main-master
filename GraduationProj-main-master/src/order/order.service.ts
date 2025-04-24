@@ -2,8 +2,8 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from 'entities/Order';
-import { Repository } from 'typeorm';
-import { Product } from 'entities/Product';
+import { Not, Repository } from 'typeorm';
+import { Product, ProductStatus } from 'entities/Product';
 
 @Injectable()
 export class OrderService {
@@ -15,10 +15,12 @@ export class OrderService {
     let price: number = 0;
     let name: string = '';
     for (const productId of createOrderDto.productIds) {
-      const product = await this.Product.findOne({ where: { id: productId } });
+      const product = await this.Product.findOne({
+        where: { id: productId, status: ProductStatus.AVAILABLE },
+      });
       if (!product) {
         throw new HttpException(
-          `Product with id ${productId} not found`,
+          `Product with id ${productId} not found, or this product not available`,
           HttpStatus.NOT_FOUND,
         );
       }
@@ -27,13 +29,19 @@ export class OrderService {
       price += product.price;
       name = product.name + ' ' + name;
     }
-
     const order = this.Order.create({
       products,
       price,
       name,
       user: { id: userId },
     });
+
+    for (const product of products) {
+      await this.Product.update(
+        { id: product.id },
+        { status: ProductStatus.SOLD },
+      );
+    }
     await this.Order.save(order);
     return {
       status: 'success',

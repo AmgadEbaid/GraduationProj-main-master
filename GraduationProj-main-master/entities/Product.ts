@@ -13,6 +13,15 @@ export enum ProductType {
   REPAIR = 'repair',
   SWAP = 'swap',
 }
+export enum ConditionType {
+  Used = 'used',
+  LikeNew = 'likeNew',
+}
+export enum ProductStatus {
+  AVAILABLE = 'available', // Product is available for purchase or swapping
+  ON_HOLD = 'on_hold', // Product is currently on hold
+  SOLD = 'sold', // Product is sold successfully
+}
 @Entity({ name: 'product' })
 export class Product {
   @PrimaryGeneratedColumn('uuid')
@@ -28,9 +37,17 @@ export class Product {
   @Column({
     type: 'enum',
     enum: ProductType,
-    default: ProductType.BUY, 
+    default: ProductType.BUY,
   })
   type: ProductType;
+  @Column({ type: 'enum', enum: ConditionType })
+  condition: ConditionType;
+  @Column({
+    type: 'enum',
+    enum: ProductStatus,
+    default: ProductStatus.AVAILABLE, // Default status is "available"
+  })
+  status: ProductStatus;
   @ManyToOne(() => User, (user) => user.products, { eager: false })
   user: User;
   @ManyToOne(() => Order, (order) => order.products)

@@ -1,5 +1,11 @@
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { ProductType } from 'entities/Product';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { ProductStatus, ProductType } from 'entities/Product';
 export class UpdateProductDto {
   @IsOptional()
   @IsString()
@@ -16,4 +22,7 @@ export class UpdateProductDto {
   @IsOptional()
   @IsEnum(ProductType)
   type?: ProductType;
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  staus: ProductStatus;
 }
