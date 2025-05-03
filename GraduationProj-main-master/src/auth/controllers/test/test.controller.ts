@@ -60,13 +60,17 @@ export class TestController {
   public getProtectedData(@Req() request: Request) {
     // Cast the user to JwtPayload type
     const user = request['user'] as JwtPayload;
+    if (!user) {
+      return {
+        message: 'Unauthorized - Invalid or missing token',
+        timestamp: new Date().toISOString(),
+      };
+    }
+    console.log(user);
     
     return {
       message: 'This is protected data that only authenticated users can access',
-      user: {
-        id: user.sub,
-        username: user.username,
-      },
+      user:user,
       timestamp: new Date().toISOString(),
     };
   }

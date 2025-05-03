@@ -13,6 +13,7 @@ import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
+import { OrderStatus } from 'entities/Order';
 @UseGuards(JwtAuthGuard)
 @Controller('order')
 export class OrderController {
@@ -54,5 +55,25 @@ export class OrderController {
   removeOrder(@Param('id') id: string, @Req() req: Request) {
     const user = req['user'] as any;
     return this.orderService.delete(id, user.id);
+  }
+
+  @Patch('status/:id')
+  async updateOrderStatus(
+    @Param('id') orderId: string,
+    @Body('status') status: OrderStatus,
+    @Req() req,
+  ) {
+    const userId = req.user.id;
+    const updatedOrder = await this.orderService.updateOrderStatus(
+      orderId,
+      userId,
+      status,
+    );
+
+    return {
+      status: 'success',
+      message: `Order ${status.toLowerCase()} successfully`,
+      data: updatedOrder,
+    };
   }
 }
