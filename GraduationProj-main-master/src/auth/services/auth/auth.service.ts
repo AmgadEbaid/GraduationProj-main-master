@@ -199,6 +199,7 @@ export class AuthService {
         status: true, // Auto-verify users who sign in with Google
         phone: '', // You might want to collect this later
         isOAuthUser: true, // Mark as OAuth user
+        image: googleUser.picture, // Use Google profile picture
       });
 
       user = await this.User.save(newUser);
