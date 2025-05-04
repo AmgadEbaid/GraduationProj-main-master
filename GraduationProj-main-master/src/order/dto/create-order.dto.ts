@@ -14,7 +14,6 @@ import { orderType, paymentMethod } from 'entities/Order';
 export class CreateOrderDto {
   @IsNotEmpty()
   name: string;
-
   @IsArray()
   @ArrayNotEmpty()
   @IsUUID('all', { each: true })
@@ -37,4 +36,7 @@ export class CreateOrderDto {
   @IsNumber()
   @Min(0)
   cashAmount?: number;
+
+  @IsOptional()
+  points?: number;
 }

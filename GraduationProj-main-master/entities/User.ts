@@ -20,6 +20,12 @@ export class User {
 
   @Column({ select: false })
   password: string;
+  
+  @Column({default: "https://miro.medium.com/v2/resize:fill:100:100/1*dmbNkD5D-u45r44go_cf0g.png" })
+  image: string;
+
+  @Column({default: 50})
+  points: number;
 
   @Column()
   name: string;

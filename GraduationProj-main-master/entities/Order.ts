@@ -63,4 +63,9 @@ export class Order {
 
   @Column({ type: 'float', nullable: true })
   cashAmount?: number;
+
+  @Column({ type: 'int', default: 0 })
+  usedPoints: number;
+  @Column({ type: 'int', default: 0 })
+  newPoints: number;
 }

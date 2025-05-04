@@ -11,11 +11,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderStatus } from 'entities/Order';
 import { Not, Repository } from 'typeorm';
 import { Product, ProductStatus } from 'entities/Product';
+import { User } from 'entities/User';
 
 @Injectable()
 export class OrderService {
   @InjectRepository(Order) private Order: Repository<Order>;
   @InjectRepository(Product) private Product: Repository<Product>;
+  @InjectRepository(User) private User: Repository<User>;
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
     let products: Product[] = [];
@@ -35,6 +37,7 @@ export class OrderService {
 
       products.push(product);
       price += product.price;
+
       name = product.name + ' ' + name;
     }
 
@@ -68,6 +71,41 @@ export class OrderService {
       }
     }
 
+    let discount = 0;
+    let usedPoints = 0;
+    let user = await this.User.findOne({
+      where: { id: userId },
+    });
+    let points = user.points - createOrderDto.points;
+    if (points < 0) {
+      throw new HttpException(
+        `You don't have enough points`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (createOrderDto.points) {
+      const requestedDiscount = createOrderDto.points / 10;
+
+      if (requestedDiscount > price) {
+        discount = price;
+        usedPoints = price * 10;
+      } else {
+        discount = requestedDiscount;
+        usedPoints = createOrderDto.points;
+      }
+
+      price -= discount;
+    }
+
+    const newPoints = Math.floor(price / 10);
+
+    user.points -= usedPoints;
+    await this.User.save(user);
+
+    console.log('newPoints', newPoints);
+    console.log('usedPoints', usedPoints);
+
     const order = this.Order.create({
       products,
       price,
@@ -77,6 +115,8 @@ export class OrderService {
       paymentMethod: createOrderDto.paymentMethod,
       cashAmount: createOrderDto.cashAmount,
       offeredProduct: offeredProduct,
+      usedPoints: usedPoints,
+      newPoints: newPoints,
     });
 
     for (const product of products) {
@@ -180,8 +220,11 @@ export class OrderService {
   ): Promise<Order> {
     const order = await this.Order.findOne({
       where: { id: orderId },
-      relations: ['products', 'products.user','offeredProduct'],
+      relations: ['products', 'products.user', 'offeredProduct', 'user'],
     });
+    let orderUserId = order.user.id;
+    console.log('orderUserId', orderUserId);
+    let orderuser = await this.User.findOne({ where: { id: orderUserId } });
 
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -208,21 +251,27 @@ export class OrderService {
     order.status = status;
 
     if (status === OrderStatus.REJECTED) {
+      orderuser.points += order.usedPoints;
+      await this.User.save(orderuser);
+
       for (const product of order.products) {
         await this.Product.update(
           { id: product.id },
           { status: ProductStatus.AVAILABLE },
         );
       }
-      console.log(order.offeredProduct)
+      console.log(order.offeredProduct);
       if (order.offeredProduct) {
         await this.Product.update(
           { id: order.offeredProduct.id },
           { status: ProductStatus.AVAILABLE },
         );
       }
-      console.log(order.offeredProduct)
+      console.log(order.offeredProduct);
     }
+
+    orderuser.points += order.newPoints;
+    await this.User.save(orderuser);
 
     await this.Order.save(order);
     return order;
