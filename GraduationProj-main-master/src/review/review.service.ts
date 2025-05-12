@@ -4,14 +4,42 @@ import { UpdateReviewDto } from './dto/update-review.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Review } from 'entities/review';
 import { Repository } from 'typeorm';
+import { Product } from 'entities/Product';
 
 @Injectable()
 export class ReviewService {
   constructor(
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
   ) {}
-  create(createReviewDto: CreateReviewDto, userId: string, productId: string) {
+  async create(
+    createReviewDto: CreateReviewDto,
+    userId: string,
+    productId: string,
+  ) {
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+      relations: ['review'],
+    });
+
+    if (!product) {
+      throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+    }
+
+    const existingReview = await this.reviewRepository.findOne({
+      where: {
+        user: { id: userId },
+        product: { id: productId },
+      },
+    });
+    if (existingReview) {
+      throw new HttpException(
+        'You have already reviewed this product',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     const review = this.reviewRepository.create({
       ...createReviewDto,
       user: { id: userId },

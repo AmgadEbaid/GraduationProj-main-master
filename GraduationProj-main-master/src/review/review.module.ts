@@ -11,5 +11,7 @@ import { Review } from 'entities/review';
   imports: [TypeOrmModule.forFeature([User, Product, Review]), JwtModule],
   controllers: [ReviewController],
   providers: [ReviewService],
+
+  exports: [ReviewService],
 })
 export class ReviewModule {}
