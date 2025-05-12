@@ -9,6 +9,7 @@ import { Address } from './Address';
 import { Order } from './Order';
 import { Review } from './review';
 import { Product } from './Product';
+// import { Message } from './Message';
 
 @Entity({ name: 'user' })
 export class User {
@@ -48,4 +49,6 @@ export class User {
   orders: Order[];
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
+  // @OneToMany(() => Message, (message) => message.sender)
+  // messages: Message[];
 }
