@@ -9,6 +9,7 @@ import { Address } from './Address';
 import { Order } from './Order';
 import { Review } from './review';
 import { Product } from './Product';
+import { Message } from './Message';
 // import { Message } from './Message';
 
 @Entity({ name: 'user' })
@@ -21,11 +22,14 @@ export class User {
 
   @Column({ select: false })
   password: string;
-  
-  @Column({default: "https://miro.medium.com/v2/resize:fill:100:100/1*dmbNkD5D-u45r44go_cf0g.png" })
+
+  @Column({
+    default:
+      'https://miro.medium.com/v2/resize:fill:100:100/1*dmbNkD5D-u45r44go_cf0g.png',
+  })
   image: string;
 
-  @Column({default: 50})
+  @Column({ default: 50 })
   points: number;
 
   @Column()
@@ -47,8 +51,8 @@ export class User {
   addresses: Address[];
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
-  @OneToMany(() => Review, (review) => review.product)
+  @OneToMany(() => Review, (review) => review.user)
   review: Review[];
-  // @OneToMany(() => Message, (message) => message.sender)
-  // messages: Message[];
+  @OneToMany(() => Message, (message) => message.sender)
+  messages: Message[];
 }

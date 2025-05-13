@@ -1,11 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
+import { In, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Chat } from 'entities/Chat';
 
 @Injectable()
 export class ChatService {
-  create(createChatDto: CreateChatDto) {
-    return 'This action adds a new chat';
+  constructor(
+    @InjectRepository(Chat) private chatRepository: Repository<Chat>,
+  ) {}
+  async create(createChatDto: CreateChatDto, requesterId: string) {
+    const chatName = `chats${requesterId < createChatDto.recepientId ? requesterId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + requesterId}`;
+    const existingChat = await this.chatRepository.findOne({
+      where: {
+        chatName,
+      },
+    });
+    if (existingChat) {
+      throw new HttpException('Chat already exists', HttpStatus.FORBIDDEN);
+    }
+
+    const chat = this.chatRepository.create({
+      participants: [{ id: requesterId }, { id: createChatDto.recepientId }],
+      chatName,
+    });
+    await this.chatRepository.save(chat);
+    return {
+      status: 'success',
+      message: 'Chat created successfully',
+      data: { ...chat },
+    };
   }
 
   findAll() {

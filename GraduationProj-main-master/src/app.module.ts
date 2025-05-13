@@ -19,9 +19,29 @@ import { Review } from 'entities/review';
 import { ProductModule } from './product/product.module';
 import { MessageModule } from './message/message.module';
 import { ChatModule } from './chat/chat.module';
+import { Chat } from 'entities/Chat';
+import { Message } from 'entities/Message';
+import { ChatGatwayGateway } from './chat/chat-gateway/chat-gateway.gateway';
+import { CacheModule } from '@nestjs/cache-manager';
+
+import { redisStore } from 'cache-manager-redis-yet';
 
 @Module({
   imports: [
+    // CacheModule.registerAsync({
+    //   useFactory: async () => {
+    //     const store = await redisStore({
+    //       socket: {
+    //         host: process.env.REDIS_HOST,
+    //         port: parseInt(process.env.REDIS_PORT, 10),
+    //       },
+    //     });
+    //     return {
+    //       store: store as unknown,
+    //       ttl: 100 * 60000, // 3 minutes (milliseconds)
+    //     };
+    //   },
+    // }),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '9d' },
@@ -35,7 +55,7 @@ import { ChatModule } from './chat/chat.module';
       database: process.env.DB_NAME,
       synchronize: true,
       logging: true,
-      entities: [User, Otp, Address, Order, Product, Review],
+      entities: [User, Otp, Address, Order, Product, Review, Message, Chat],
     }),
     UserModule,
     AuthModule,
@@ -56,6 +76,7 @@ import { ChatModule } from './chat/chat.module';
       }),
     },
     AppService,
+    ChatGatwayGateway,
   ],
 })
 export class AppModule {}
