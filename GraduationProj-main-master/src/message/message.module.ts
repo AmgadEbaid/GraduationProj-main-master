@@ -11,5 +11,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [JwtModule, TypeOrmModule.forFeature([Message, User])],
   controllers: [MessageController],
   providers: [MessageService],
+  exports: [MessageService],
 })
 export class MessageModule {}

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'entities/User';
 import { createUser } from 'src/user/dtos/createUser.dto';
 import { Repository } from 'typeorm';
+import { UpdateFcmTokenDto } from './dtos/UpdateFcmToken.dto';
 
 @Injectable()
 export class UserService {
@@ -10,14 +11,15 @@ export class UserService {
     @InjectRepository(User) private UserRepository: Repository<User>,
   ) {}
 
-  async find(email: string) {
-    const users = this.UserRepository.find({ where: { email: email } });
-    return users;
+  async findOne(id: string) {
+    const user = this.UserRepository.findOne({ where: { id } });
+    return user;
   }
 
-  async create(userbody: createUser) {
-    const user = await this.UserRepository.create(userbody);
-    await this.UserRepository.save(user);
-    return user;
+  async updateFcmToken(updateFcmToken: UpdateFcmTokenDto, userId: string) {
+    await this.UserRepository.update(userId, {
+      fcmToken: updateFcmToken.fcmToken,
+    });
+    return { status: 'success', message: 'FCM token updated successfully' };
   }
 }

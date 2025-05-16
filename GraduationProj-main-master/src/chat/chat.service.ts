@@ -37,10 +37,37 @@ export class ChatService {
     return `This action returns all chat`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} chat`;
+  async findOne(
+    senderId: string,
+    createChatDto: CreateChatDto,
+    returnMessages: boolean = false,
+  ) {
+    const chatName = `chats${senderId < createChatDto.recepientId ? senderId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + senderId}`;
+    let chat = await this.chatRepository.findOne({
+      where: {
+        chatName,
+      },
+    });
+    if (!chat) {
+      return false;
+    }
+    if (returnMessages) {
+      chat = await this.chatRepository.findOne({
+        where: { id: chat.id },
+        relations: ['messages'],
+      });
+      return {
+        status: 'success',
+        message: 'Chat found successfully',
+        data: { ...chat },
+      };
+    }
+    return {
+      status: 'success',
+      message: 'Chat found successfully',
+      data: { ...chat },
+    };
   }
-
   update(id: number, updateChatDto: UpdateChatDto) {
     return `This action updates a #${id} chat`;
   }
