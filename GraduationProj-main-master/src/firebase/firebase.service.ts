@@ -11,7 +11,7 @@ export class FirebaseService {
     if (!admin.apps.length) {
       const serviceAccount = JSON.parse(
         fs.readFileSync(
-          './src/firebase/furnistore-27419-firebase-adminsdk-fbsvc-ee7c19f60a.json',
+          './src/firebase/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json',
           'utf-8',
         ),
       );
@@ -42,8 +42,11 @@ export class FirebaseService {
 
     try {
       const response = await this.defaultApp.messaging().send(message);
-      console.log('Successfully sent message:', response);
-      return response;
+      return {
+        status: 'success',
+        message: 'Notification sent successfully',
+        response,
+      };
     } catch (error) {
       console.error('Error sending message:', error);
       throw new HttpException('Error sending message', 500);
