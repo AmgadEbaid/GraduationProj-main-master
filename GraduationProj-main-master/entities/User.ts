@@ -42,6 +42,9 @@ export class User {
   @Column()
   phone: string;
 
+  @Column()
+  fcmToken: string;
+
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
   isOAuthUser: boolean;

@@ -34,14 +34,14 @@ export class AuthService {
   ) {}
 
   async signUp(user: createUser) {
-    const users = await this.userservice.find(user.email);
+    const users = await this.User.find({ where: { email: user.email } });
     if (users.length) {
       throw new BadRequestException('email is already used');
     }
     const hashedPassword = await bcrypt.hash(user.password, 10);
     user.password = hashedPassword;
 
-    return this.userservice.create(user);
+    return await this.User.save(this.User.create(user));
   }
 
   async login(user: User) {

@@ -21,27 +21,11 @@ import { MessageModule } from './message/message.module';
 import { ChatModule } from './chat/chat.module';
 import { Chat } from 'entities/Chat';
 import { Message } from 'entities/Message';
-import { ChatGatwayGateway } from './chat/chat-gateway/chat-gateway.gateway';
-import { CacheModule } from '@nestjs/cache-manager';
+import { FirebaseModule } from './firebase/firebase.module';
 
-import { redisStore } from 'cache-manager-redis-yet';
 
 @Module({
   imports: [
-    // CacheModule.registerAsync({
-    //   useFactory: async () => {
-    //     const store = await redisStore({
-    //       socket: {
-    //         host: process.env.REDIS_HOST,
-    //         port: parseInt(process.env.REDIS_PORT, 10),
-    //       },
-    //     });
-    //     return {
-    //       store: store as unknown,
-    //       ttl: 100 * 60000, // 3 minutes (milliseconds)
-    //     };
-    //   },
-    // }),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '9d' },
@@ -66,6 +50,7 @@ import { redisStore } from 'cache-manager-redis-yet';
     ProductModule,
     ChatModule,
     MessageModule,
+    FirebaseModule,
   ],
   controllers: [AppController],
   providers: [
@@ -76,7 +61,6 @@ import { redisStore } from 'cache-manager-redis-yet';
       }),
     },
     AppService,
-    ChatGatwayGateway,
   ],
 })
 export class AppModule {}
