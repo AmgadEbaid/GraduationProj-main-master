@@ -42,7 +42,7 @@ export class User {
   @Column()
   phone: string;
 
-  @Column()
+  @Column({ nullable: true })
   fcmToken: string;
 
   // Flag to indicate if the user was created via OAuth (Google, etc.)
