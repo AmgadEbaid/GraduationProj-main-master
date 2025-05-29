@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -15,15 +17,46 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
 import { ProductType } from 'entities/Product';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as multerS3 from 'multer-s3';
+import { MulterS3File } from '../user/interface/multer-s3.interface';
+import { s3 } from 'src/aws/s3.client';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
+
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: multerS3({
+        s3,
+        bucket: process.env.AWS_BUCKET_NAME,
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: (req, file, cb) => {
+          const timestamp = Date.now();
+          const fileExtension = file.originalname.split('.').pop();
+          const filename = `product-${timestamp}.${fileExtension}`;
+          cb(null, `${process.env.AWS_PRODCUT_IMAGES_NAME}/${filename}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 }, // Optional: 5MB max
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/^image\/(jpeg|png|jpg|webp)$/)) {
+          return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
   @UseGuards(JwtAuthGuard)
   @Post('create')
-  create(@Body() createProductDto: CreateProductDto, @Req() req: Request) {
+  create(
+    @Body() createProductDto: CreateProductDto,
+    @Req() req: Request,
+    @UploadedFile() file: MulterS3File,
+  ) {
     const user = req['user'] as any;
-    return this.productService.create(createProductDto, user.id);
+    return this.productService.create(createProductDto, user.id, file);
   }
 
   @Get('all')

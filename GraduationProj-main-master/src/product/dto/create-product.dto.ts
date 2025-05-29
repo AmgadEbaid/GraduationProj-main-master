@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -13,14 +14,13 @@ export class CreateProductDto {
   @IsNotEmpty()
   name: string;
   @IsNotEmpty()
+  @Type(() => Number)
   @IsInt()
   price: number;
   @IsNotEmpty()
   @IsString()
   description: string;
-  @IsNotEmpty()
-  @IsString()
-  imageUrl: string;
+
   @IsEnum(ProductType)
   @IsNotEmpty()
   type: ProductType;

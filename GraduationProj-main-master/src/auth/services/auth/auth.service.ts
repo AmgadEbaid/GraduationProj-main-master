@@ -45,9 +45,12 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { username: user.name, sub: user.id };
+    const payload = {
+      username: user.firstName + (user.lastName ? ' ' + user.lastName : ''),
+      sub: user.id,
+    };
     return {
-      username: user.name,
+      username: user.firstName + (user.lastName ? ' ' + user.lastName : ''),
       id: user.id,
       email: user.email,
       status: user.status,
@@ -71,7 +74,8 @@ export class AuthService {
         'id',
         'email',
         'password',
-        'name',
+        'firstName',
+        'lastName',
         'status',
         'phone',
         'isOAuthUser',
@@ -181,7 +185,8 @@ export class AuthService {
       select: [
         'id',
         'email',
-        'name',
+        'firstName',
+        'lastName',
         'status',
         'phone',
         'isOAuthUser',
@@ -193,7 +198,8 @@ export class AuthService {
       // Create a new user if they don't exist
       const newUser = this.User.create({
         email: googleUser.email,
-        name: `${googleUser.firstName} ${googleUser.lastName}`,
+        firstName: `${googleUser.firstName}`,
+        lastName: ` ${googleUser.lastName}`,
         // Generate a random password for the user (they won't use it)
         password: await bcrypt.hash(Math.random().toString(36).slice(-8), 10),
         status: true, // Auto-verify users who sign in with Google

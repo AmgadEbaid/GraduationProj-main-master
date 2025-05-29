@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@redis/client": "^5.0.1",
-    "firebase-admin": "^13.4.0",
-    "redis": "^5.0.1"
-  }
-}
