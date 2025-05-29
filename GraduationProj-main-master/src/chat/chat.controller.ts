@@ -20,7 +20,7 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post()
+  @Post('create')
   create(@Req() req: Request, @Body() createChatDto: CreateChatDto) {
     const user = req['user'] as any;
     return this.chatService.create(createChatDto, user.id);
@@ -31,18 +31,21 @@ export class ChatController {
     return this.chatService.findAll();
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.chatService.findOne(+id);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Get('find-one')
+  findOne(@Req() req: Request, @Body() createChatDto: CreateChatDto) {
+    const user = req['user'] as any;
+    return this.chatService.findOne(user.id, createChatDto, true);
+  }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateChatDto: UpdateChatDto) {
     return this.chatService.update(+id, updateChatDto);
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.chatService.remove(+id);
+  @UseGuards(JwtAuthGuard)
+  @Get('my-chats')
+  async findMyChats(@Req() req: Request) {
+    const user = req['user'] as any;
+    return this.chatService.findManyByUserId(user.id);
   }
 }

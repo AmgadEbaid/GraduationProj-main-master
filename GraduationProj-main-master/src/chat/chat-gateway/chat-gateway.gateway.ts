@@ -25,7 +25,10 @@ export class ChatGatwayGateway {
     this.redisClient = createClient({
       url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, // Connection URL for Redis
     });
-    this.redisClient.connect(); // Connect to Redis
+    this.redisClient.connect().catch((err) => {
+      console.error('Redis connection failed', err);
+    });
+    // Connect to Redis
   }
   @WebSocketServer() server: Server;
   async handleConnection(@ConnectedSocket() client: Socket) {
@@ -58,22 +61,21 @@ export class ChatGatwayGateway {
     payload: { receiverId: string; content: string },
   ) {
     const { receiverId, content } = payload;
-    const user = client['user'];
+    const userId = client['user'];
     const senderSocket = (await this.redisClient.get(
-      `user:${user.userId}:socketId`,
+      `user:${userId}:socketId`,
     )) as string;
     const receiverSocket = (await this.redisClient.get(
       `user:${receiverId}:socketId`,
     )) as string;
-    if (senderSocket === receiverSocket) {
+    if (userId === receiverId) {
       client.emit('error', {
-        message: 'The the sender socke is the same as the receiver socket ',
+        message: 'You cannot send a message to yourself',
       });
-      throw new WsException(
-        'The the sender socke is the same as the receiver socket ',
-      );
+      throw new WsException('Cannot message self');
     }
-    let chat = await this.chatService.findOne(user.userId, {
+
+    let chat = await this.chatService.findOne(userId, {
       recepientId: receiverId,
     });
     if (!chat) {
@@ -87,7 +89,7 @@ export class ChatGatwayGateway {
     }
     if (receiverSocket) {
       this.server.to(receiverSocket).emit('message', {
-        senderId: user.userId,
+        senderId: userId,
         content,
       });
     } else {
@@ -103,11 +105,17 @@ export class ChatGatwayGateway {
         'New message',
         content,
         {
-          senderId: user.userId,
+          senderId: userId,
           chatId: chat.data.id,
         },
       );
-      console.log('Notification sent:', notification);
     }
+    const message = await this.messageService.create(
+      {
+        message: content,
+        chatId: chat.data.id,
+      },
+      userId,
+    );
   }
 }
