@@ -15,9 +15,17 @@ export class ProductService {
     @InjectRepository(Product)
     private readonly ProductRepository: Repository<Product>,
   ) {}
-  async create(createProductDto: CreateProductDto, userId: string) {
+  async create(createProductDto: CreateProductDto, userId: string, image: any) {
+    if (!image || !image.location) {
+      throw new HttpException(
+        'Image is required to create a product',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const imageUrl = image.location;
     const product = this.ProductRepository.create({
       ...createProductDto,
+      imageUrl,
       user: { id: userId },
     });
     await this.ProductRepository.save(product);

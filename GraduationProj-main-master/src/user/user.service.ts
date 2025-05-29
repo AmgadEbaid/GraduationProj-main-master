@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'entities/User';
 import { createUser } from 'src/user/dtos/createUser.dto';
 import { Repository } from 'typeorm';
 import { UpdateFcmTokenDto } from './dtos/UpdateFcmToken.dto';
+import { UpdateUserDetailsDto } from './dtos/updateUserDetails';
 
 @Injectable()
 export class UserService {
@@ -21,5 +22,42 @@ export class UserService {
       fcmToken: updateFcmToken.fcmToken,
     });
     return { status: 'success', message: 'FCM token updated successfully' };
+  }
+  async updateUserDetails(
+    updateUserDetails: UpdateUserDetailsDto,
+    userId: string,
+    image?: any,
+  ) {
+    let imagePath: string;
+    if (image) {
+      imagePath = image.location;
+    }
+    const user = await this.UserRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new HttpException(
+        'No such user with that Id',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const updatedUser = await this.UserRepository.merge(user, {
+      firstName: updateUserDetails.firstName
+        ? updateUserDetails.firstName
+        : user.firstName,
+      lastName: updateUserDetails.lastName
+        ? updateUserDetails.lastName
+        : user.lastName,
+      image: imagePath ? imagePath : user.image,
+      dateOfBirth: updateUserDetails.dateOfBirth
+        ? updateUserDetails.dateOfBirth
+        : user.dateOfBirth,
+    });
+    await this.UserRepository.save(updatedUser);
+    return {
+      status: 'success',
+      message: 'User details updated successfully',
+      data: updatedUser,
+    };
   }
 }

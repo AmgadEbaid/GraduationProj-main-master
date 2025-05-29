@@ -33,7 +33,10 @@ export class User {
   points: number;
 
   @Column()
-  name: string;
+  firstName: string;
+
+  @Column({ nullable: true })
+  lastName: string;
 
   // This attribute indicte whether the user signed up with the OTP successfully or not
   @Column({ default: false })
@@ -44,6 +47,9 @@ export class User {
 
   @Column({ nullable: true })
   fcmToken: string;
+
+  @Column({ type: 'date', nullable: true })
+  dateOfBirth: Date;
 
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })

@@ -61,5 +61,4 @@ config.env
 
 # Firebase service account key
 /GraduationProj-main-master/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
-
-
+/config.env

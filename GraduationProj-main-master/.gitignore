@@ -1,45 +1,65 @@
-# Node modules
+# compiled output
+/dist
+/node_modules
+/build
 node_modules/
-
-# Build output
-dist/
-build/
-
-# Environment files
-.env
-.env.*.local
 
 # Logs
 logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 
-# OS-specific files
+# OS
 .DS_Store
-Thumbs.db
+
+# Tests
+/coverage
+/.nyc_output
 
 # IDEs and editors
-.vscode/
-.idea/
-*.sw?
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# TypeScript cache
-*.tsbuildinfo
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# Jest coverage
-coverage/
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+config.env
 
-# Compiled source
-*.js
-*.js.map
+# temp directory
+.temp
+.tmp
 
-# Optional npm cache
-.npm/
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Package lock files (if you use yarn, remove package-lock.json)
-package-lock.json
-.pnpm-debug.log
-
-dist/
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+graduation-project/config.env
+config.env
+/Volumes/work/GraduationProj/GraduationProj-main-master/GraduationProj-main-master/config.env
+# Firebase service account key
+/GraduationProj-main-master/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
+GraduationProj-main-master/GraduationProj-main-master/config.env
+/config.env
