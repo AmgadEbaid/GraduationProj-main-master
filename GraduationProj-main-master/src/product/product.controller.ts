@@ -33,7 +33,6 @@ export class ProductController {
         bucket: process.env.AWS_BUCKET_NAME,
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: (req, file, cb) => {
-          const productName = req.body.name;
           const timestamp = Date.now();
           const fileExtension = file.originalname.split('.').pop();
           const filename = `product-${timestamp}.${fileExtension}`;

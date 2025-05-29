@@ -58,8 +58,9 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 graduation-project/config.env
 config.env
-/Volumes/work/GraduationProj/GraduationProj-main-master/GraduationProj-main-master/config.env
+
 # Firebase service account key
 /GraduationProj-main-master/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
-GraduationProj-main-master/GraduationProj-main-master/config.env
 /config.env
+/Volumes/work/GraduationProj/GraduationProj-main-master/GraduationProj-main-master/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
+/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
