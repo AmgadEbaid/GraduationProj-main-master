@@ -54,7 +54,7 @@ export class ChatService {
     if (returnMessages) {
       chat = await this.chatRepository.findOne({
         where: { id: chat.id },
-        relations: ['messages'],
+        relations: ['messages', 'participants'],
       });
       return {
         status: 'success',
@@ -71,8 +71,40 @@ export class ChatService {
   update(id: number, updateChatDto: UpdateChatDto) {
     return `This action updates a #${id} chat`;
   }
+  // This method finds all chats for a user by their userId
+  async findManyByUserId(userId: string) {
+    let chats = await this.chatRepository.find({
+      where: {
+        participants: {
+          id: userId,
+        },
+      },
+      select: ['id'],
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} chat`;
+    if (!chats.length) {
+      return {
+        status: 'success',
+        message: 'No chats found',
+      };
+    }
+    chats = await this.chatRepository.find({
+      where: { id: In([...chats.map((chat) => chat.id)]) },
+      relations: ['participants'],
+    });
+    console.log('chats', chats);
+    const chatDetails = chats.map((chat) => {
+      return {
+        chatId: chat.id,
+        receiverId: chat.participants.find(
+          (participant) => participant.id !== userId,
+        ).id,
+      };
+    });
+    return {
+      status: 'success',
+      message: 'Chats fetched successfully',
+      data: { ...chatDetails },
+    };
   }
 }
