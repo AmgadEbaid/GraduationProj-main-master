@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from './User';
 import { Product } from './Product';
 import { IsOptional, Max, Min } from 'class-validator';
@@ -19,4 +25,6 @@ export class Review {
   user: User;
   @ManyToOne(() => Product, (product) => product.review)
   product: Product;
+  @CreateDateColumn()
+  createdAt: Date;
 }

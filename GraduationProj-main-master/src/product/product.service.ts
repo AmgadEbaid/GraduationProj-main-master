@@ -125,11 +125,16 @@ export class ProductService {
     };
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto, userId: string) {
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    userId: string,
+    image?: any,
+  ) {
     const product = await this.ProductRepository.findOne({
       where: {
         id,
-        status: Not(ProductStatus.SOLD), // Ensure the status is not "SOLD"
+        status: Not(ProductStatus.SOLD),
       },
       relations: ['user'],
     });
@@ -140,17 +145,23 @@ export class ProductService {
         HttpStatus.NOT_FOUND,
       );
     }
-    // Check if the user is the owner of the product
+
+    const imageUrl =
+      image && image.location ? image.location : product.imageUrl;
+
     if (product.user.id !== userId) {
       throw new ForbiddenException(
         'You are not authorized to update this product',
       );
     }
-    await this.ProductRepository.update(id, updateProductDto);
+    const updatedProduct = await this.ProductRepository.merge(product, {
+      ...updateProductDto,
+      imageUrl,
+    });
     return {
       status: 'success',
       message: 'Product updated successfully',
-      data: { ...product, ...updateProductDto },
+      data: { updatedProduct },
     };
   }
 
