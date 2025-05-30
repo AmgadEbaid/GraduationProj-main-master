@@ -83,15 +83,39 @@ export class ProductController {
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
+
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: multerS3({
+        s3,
+        bucket: process.env.AWS_BUCKET_NAME,
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: (req, file, cb) => {
+          const timestamp = Date.now();
+          const fileExtension = file.originalname.split('.').pop();
+          const filename = `product-${timestamp}.${fileExtension}`;
+          cb(null, `${process.env.AWS_PRODCUT_IMAGES_NAME}/${filename}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 }, // Optional: 5MB max
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/^image\/(jpeg|png|jpg|webp)$/)) {
+          return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
   @UseGuards(JwtAuthGuard)
   @Patch('update/:id')
   update(
     @Param('id') id: string,
     @Body() updateProductDto: UpdateProductDto,
     @Req() req: Request,
+    @UploadedFile() file: MulterS3File,
   ) {
     const user = req['user'] as any;
-    return this.productService.update(id, updateProductDto, user.id);
+    return this.productService.update(id, updateProductDto, user.id, file);
   }
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')

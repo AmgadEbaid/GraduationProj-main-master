@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
@@ -14,6 +15,7 @@ export enum ProductType {
   SWAP = 'swap',
 }
 export enum ConditionType {
+  New = 'new', // Product is brand new
   Used = 'used',
   LikeNew = 'likeNew',
 }
@@ -21,6 +23,15 @@ export enum ProductStatus {
   AVAILABLE = 'available', // Product is available for purchase or swapping
   ON_HOLD = 'on_hold', // Product is currently on hold
   SOLD = 'sold', // Product is sold successfully
+}
+export enum ProductCategories {
+  Chair = 'chair',
+  Table = 'table',
+  Sofa = 'sofa',
+  Bed = 'bed',
+  Desk = 'desk',
+  Cabinet = 'cabinet',
+  Lighting = 'lighting',
 }
 @Entity({ name: 'product' })
 export class Product {
@@ -48,6 +59,18 @@ export class Product {
     default: ProductStatus.AVAILABLE, // Default status is "available"
   })
   status: ProductStatus;
+
+  @Column({
+    type: 'enum',
+    enum: ProductCategories,
+  })
+  category: ProductCategories;
+
+  @Column({ nullable: true })
+  location: string; // Location of the product, e.g., city or area
+  @CreateDateColumn()
+  createdAt: Date;
+
   @ManyToOne(() => User, (user) => user.products, { eager: false })
   user: User;
   @ManyToOne(() => Order, (order) => order.products)
