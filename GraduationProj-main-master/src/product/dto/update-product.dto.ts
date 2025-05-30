@@ -5,7 +5,18 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ProductStatus, ProductType } from 'entities/Product';
+import {
+  ConditionType,
+  ProductCategories,
+  ProductStatus,
+  ProductType,
+} from 'entities/Product';
+
+export enum ProductStatusWithoutSold {
+  AVAILABLE = 'available', // Product is available for purchase or swapping
+  ON_HOLD = 'on_hold', // Product is currently on hold
+}
+
 export class UpdateProductDto {
   @IsOptional()
   @IsString()
@@ -17,12 +28,18 @@ export class UpdateProductDto {
   @IsString()
   description?: string;
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
-  @IsOptional()
   @IsEnum(ProductType)
   type?: ProductType;
   @IsOptional()
-  @IsEnum(ProductStatus)
-  staus: ProductStatus;
+  @IsEnum(ProductStatusWithoutSold)
+  staus: ProductStatusWithoutSold;
+  @IsOptional()
+  @IsEnum(ProductCategories)
+  category?: ProductCategories;
+  @IsOptional()
+  @IsString()
+  location?: string;
+  @IsOptional()
+  @IsEnum(ConditionType)
+  condition?: ConditionType;
 }
