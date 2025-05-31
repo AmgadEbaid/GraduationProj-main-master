@@ -28,7 +28,6 @@ export class ChatGatwayGateway {
     });
     this.redisClient.connect().catch((err) => {
       console.error('Redis connection failed', err);
-      throw new HttpException('Redis connection failed', 500);
     });
     // Connect to Redis
   }
