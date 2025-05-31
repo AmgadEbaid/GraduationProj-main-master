@@ -158,6 +158,7 @@ export class ProductService {
       ...updateProductDto,
       imageUrl,
     });
+    await this.ProductRepository.save(updatedProduct);
     return {
       status: 'success',
       message: 'Product updated successfully',
