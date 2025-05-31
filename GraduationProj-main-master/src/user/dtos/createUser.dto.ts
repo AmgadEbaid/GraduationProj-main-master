@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsOptional,
   IsPhoneNumber,
   IsString,
   Matches,
@@ -19,7 +20,13 @@ export class createUser {
   @IsString()
   @MinLength(4)
   @MaxLength(20)
-  name: string;
+  firstName: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(4)
+  @MaxLength(20)
+  lastName: string;
 
   @ApiProperty({
     description: 'User email address',

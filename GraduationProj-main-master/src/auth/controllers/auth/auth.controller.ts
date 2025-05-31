@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { User } from 'entities/User';
 import { createUser } from 'src/user/dtos/createUser.dto';
 import { AuthService } from 'src/auth/services/auth/auth.service';
@@ -156,7 +156,7 @@ export class AuthController {
     status: 400,
     description: 'Bad request - Invalid OTP or expired OTP',
   })
-  @Post('reset-password')
+  @Patch('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     const user = await this.authservice.resetPassword(
       resetPasswordDto.email,

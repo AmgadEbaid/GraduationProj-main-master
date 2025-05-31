@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -22,6 +23,7 @@ export class UpdateProductDto {
   @IsString()
   name?: string;
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   price?: number;
   @IsOptional()
