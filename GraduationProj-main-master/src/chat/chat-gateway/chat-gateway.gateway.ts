@@ -13,6 +13,7 @@ import { createClient } from 'redis';
 import { RedisClientType } from '@redis/client';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { UserService } from 'src/user/user.service';
+import { HttpException } from '@nestjs/common';
 @WebSocketGateway(3002, { cors: '*' })
 export class ChatGatwayGateway {
   private redisClient: RedisClientType;
@@ -27,6 +28,7 @@ export class ChatGatwayGateway {
     });
     this.redisClient.connect().catch((err) => {
       console.error('Redis connection failed', err);
+      throw new HttpException('Redis connection failed', 500);
     });
     // Connect to Redis
   }
