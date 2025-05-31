@@ -12,6 +12,12 @@ import { Product } from './Product';
 import { Message } from './Message';
 // import { Message } from './Message';
 
+export enum Roles {
+  User = 'user',
+  Admin = 'admin',
+  Workshop = 'workshop',
+  Delivery = 'delivery',
+}
 @Entity({ name: 'user' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -51,6 +57,8 @@ export class User {
   @Column({ type: 'date', nullable: true })
   dateOfBirth: Date;
 
+  @Column({ type: 'enum', enum: Roles, default: Roles.User })
+  role: Roles;
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
   isOAuthUser: boolean;
