@@ -9,6 +9,7 @@ import {
 import { Order } from './Order';
 import { Review } from './review';
 import { User } from './User';
+import { Repair } from './Repair';
 export enum ProductType {
   BUY = 'buy',
   REPAIR = 'repair',
@@ -77,4 +78,6 @@ export class Product {
   order: Order;
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
+  @ManyToOne(() => Repair, (repair) => repair.products)
+  repair: Repair;
 }

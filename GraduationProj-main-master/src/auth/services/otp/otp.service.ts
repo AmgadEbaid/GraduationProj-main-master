@@ -83,7 +83,7 @@ export class OtpService {
     await this.otpRepository.save(otp);
 
     // Update user status if needed
-    const user = await this.userRepository.findOne({ where: { email :email } });
+    const user = await this.userRepository.findOne({ where: { email: email } });
     if (user && !user.status) {
       user.status = true;
       await this.userRepository.save(user);

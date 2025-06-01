@@ -22,6 +22,8 @@ import { ChatModule } from './chat/chat.module';
 import { Chat } from 'entities/Chat';
 import { Message } from 'entities/Message';
 import { FirebaseModule } from './firebase/firebase.module';
+import { RepairModule } from './repair/repair.module';
+import { Repair } from 'entities/Repair';
 
 
 @Module({
@@ -39,7 +41,7 @@ import { FirebaseModule } from './firebase/firebase.module';
       database: process.env.DB_NAME,
       synchronize: true,
       logging: true,
-      entities: [User, Otp, Address, Order, Product, Review, Message, Chat],
+      entities: [User, Otp, Address, Order, Product, Review, Message, Chat, Repair],
     }),
     UserModule,
     AuthModule,
@@ -51,6 +53,7 @@ import { FirebaseModule } from './firebase/firebase.module';
     ChatModule,
     MessageModule,
     FirebaseModule,
+    RepairModule,
   ],
   controllers: [AppController],
   providers: [

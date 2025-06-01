@@ -10,6 +10,7 @@ import { Order } from './Order';
 import { Review } from './review';
 import { Product } from './Product';
 import { Message } from './Message';
+import { Repair } from './Repair';
 // import { Message } from './Message';
 
 export enum Roles {
@@ -18,6 +19,7 @@ export enum Roles {
   Workshop = 'workshop',
   Delivery = 'delivery',
 }
+
 @Entity({ name: 'user' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -62,6 +64,7 @@ export class User {
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
   isOAuthUser: boolean;
+  // User Relations
   @OneToMany(() => Product, (product) => product.user)
   products: Product[];
   @OneToMany(() => Address, (address) => address.user)
@@ -72,4 +75,6 @@ export class User {
   review: Review[];
   @OneToMany(() => Message, (message) => message.sender)
   messages: Message[];
+  @OneToMany(() => Repair, (repair) => repair.user)
+  repair: Repair[];
 }
