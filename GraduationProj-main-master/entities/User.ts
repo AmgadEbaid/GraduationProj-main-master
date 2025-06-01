@@ -61,15 +61,20 @@ export class User {
   role: Roles;
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
-  isOAuthUser: boolean;
+  isOAuthUser: boolean; 
   @OneToMany(() => Product, (product) => product.user)
   products: Product[];
   @OneToMany(() => Address, (address) => address.user)
   addresses: Address[];
+  // Orders created by this user (as a customer)
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
+  
+  // Orders being delivered by this user (as a delivery person)
+  @OneToMany(() => Order, (order) => order.deliveryman)
+  deliveryOrders: Order[];
   @OneToMany(() => Review, (review) => review.user)
   review: Review[];
   @OneToMany(() => Message, (message) => message.sender)
   messages: Message[];
-}
+  }

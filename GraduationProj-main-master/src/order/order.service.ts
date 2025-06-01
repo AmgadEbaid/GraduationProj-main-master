@@ -8,10 +8,10 @@ import {
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order, OrderStatus } from 'entities/Order';
+import { Order, OrderStatus, orderType, paid_status, shippingStatus } from 'entities/Order';
 import { Not, Repository } from 'typeorm';
 import { Product, ProductStatus } from 'entities/Product';
-import { User } from 'entities/User';
+import { Roles, User } from 'entities/User';
 
 @Injectable()
 export class OrderService {
@@ -109,7 +109,6 @@ export class OrderService {
     const order = this.Order.create({
       products,
       price,
-      name,
       user: { id: userId },
       type: createOrderDto.type,
       paymentMethod: createOrderDto.paymentMethod,
@@ -204,7 +203,7 @@ export class OrderService {
     const order = await this.Order.findOne({
       where: { id: orderId },
       relations: ['user', 'products'],
-      select: ['id', 'user', 'products', 'price', 'name'],
+      select: ['id', 'user', 'products', 'price'],
     });
 
     if (!order || !(order.user.id === userId))
@@ -222,14 +221,23 @@ export class OrderService {
       where: { id: orderId },
       relations: ['products', 'products.user', 'offeredProduct', 'user'],
     });
-    let orderUserId = order.user.id;
-    console.log('orderUserId', orderUserId);
-    let orderuser = await this.User.findOne({ where: { id: orderUserId } });
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
+    // Get both the seller and the order's customer
+    const seller = await this.User.findOne({ where: { id: userId } });
+    const customer = await this.User.findOne({ where: { id: order.user.id } });
+    
+    if (!seller) {
+      throw new NotFoundException('Seller not found');
+    }
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    // Check if the user is the seller of all products in the order
     const ownsAllProducts = order.products.every(
       (product) => product.user.id === userId,
     );
@@ -240,19 +248,57 @@ export class OrderService {
       );
     }
 
-    if (![OrderStatus.ACCEPTED, OrderStatus.REJECTED].includes(status)) {
-      throw new BadRequestException('Invalid status update');
+    // Define valid status transitions based on current status
+    const validTransitions = {
+      [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.REJECTED],
+      [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING],
+      [OrderStatus.PROCESSING]: [OrderStatus.AWAITING_SHIPMENT],
+      [OrderStatus.AWAITING_SHIPMENT]: [OrderStatus.CONFIRMED], // Seller can put back to confirmed if needed
+      [OrderStatus.COMPLETED]: [], // Final state
+      [OrderStatus.REJECTED]: [], // Final state
+      [OrderStatus.CANCELLED]: [], // Final state
+    };
+
+    if (!validTransitions[order.status]?.includes(status)) {
+      let errorMessage = '';
+      switch (order.status) {
+        case OrderStatus.PENDING:
+          errorMessage = 'Order can only be Confirmed or Rejected from Pending status';
+          break;
+        case OrderStatus.CONFIRMED:
+          errorMessage = 'Confirmed order must be moved to Processing status';
+          break;
+        case OrderStatus.PROCESSING:
+          errorMessage = 'Processing order must be moved to Awaiting Shipment status when ready for pickup';
+          break;
+        case OrderStatus.AWAITING_SHIPMENT:
+          errorMessage = 'You can move the order back to Confirmed if needed';
+          break;
+        default:
+          errorMessage = `Cannot change status from ${order.status} to ${status}`;
+      }
+      throw new BadRequestException(errorMessage);
     }
 
-    if (order.status !== OrderStatus.PENDING) {
-      throw new BadRequestException('Order is not in a pending state');
+    // Update timestamps and status
+    switch (status) {
+      case OrderStatus.CONFIRMED:
+        order.confirmedAt = new Date();
+        break;
+      case OrderStatus.REJECTED:
+        order.cancelledAt = new Date();
+        break;
+      case OrderStatus.AWAITING_SHIPMENT:
+        order.shippingStatus = shippingStatus.AWAITING_FULFILLMENT;
+        break;
     }
 
     order.status = status;
 
     if (status === OrderStatus.REJECTED) {
-      orderuser.points += order.usedPoints;
-      await this.User.save(orderuser);
+      // Handle rejection - return points and make products available
+      customer.points += order.usedPoints;
+      await this.User.save(customer);
 
       for (const product of order.products) {
         await this.Product.update(
@@ -260,20 +306,426 @@ export class OrderService {
           { status: ProductStatus.AVAILABLE },
         );
       }
-      console.log(order.offeredProduct);
+
       if (order.offeredProduct) {
         await this.Product.update(
           { id: order.offeredProduct.id },
           { status: ProductStatus.AVAILABLE },
         );
       }
-      console.log(order.offeredProduct);
     }
 
-    orderuser.points += order.newPoints;
-    await this.User.save(orderuser);
+    // Always give new points for confirmed orders
+    if (status === OrderStatus.CONFIRMED) {
+      customer.points += order.newPoints;
+      await this.User.save(customer);
+    }
 
     await this.Order.save(order);
     return order;
   }
+
+  async delverymanAcceptOrder(orderId: string, deliveryman: User) {
+
+    deliveryman = await this.User.findOne({
+      where: { id: deliveryman.id , role: Roles.Delivery },
+    });
+    if (!deliveryman) {
+      throw new NotFoundException('Deliveryman not found');
+    }
+    
+    const order = await this.Order.findOne({
+      where: { id: orderId, deliveryman: null },
+      relations: ['products', 'user'],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found or already accepted');
+    }
+
+    if (order.status !== OrderStatus.AWAITING_SHIPMENT) {
+      throw new BadRequestException('Order is not not ready for shipment yet');
+    }
+
+    order.deliveryman = deliveryman;
+    order.status = OrderStatus.SHIPPED;
+    order.shippingStatus = shippingStatus.DISPATCHED_FOR_PICKUP;
+
+    await this.Order.save(order);
+    return {
+      data: order,
+    };
+
+  }
+
+  async updateDeliveryStatus(
+    orderId: string,
+    deliverymanId: string,
+    newShippingStatus: shippingStatus,
+  ) {
+    const order = await this.Order.findOne({
+      where: { id: orderId },
+      relations: ['deliveryman', 'offeredProduct'],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // Check if this delivery person is assigned to this order
+    if (!order.deliveryman || order.deliveryman.id !== deliverymanId) {
+      throw new ForbiddenException(
+        'You are not authorized to update this order - not assigned to you',
+      );
+    }
+
+    // Special statuses that can be set at any time
+    const specialStatuses = [
+      shippingStatus.DELAYED,
+      shippingStatus.LOST,
+      shippingStatus.CANCELLED,
+    ];
+
+    // Check if the new status is RETURNED_TO_SENDER
+    if (newShippingStatus === shippingStatus.RETURNED_TO_SENDER) {
+      // Only allow if current status is one of delayed, cancelled, or lost
+      const validPreviousStates = [
+        shippingStatus.DELAYED,
+        shippingStatus.CANCELLED,
+        shippingStatus.LOST,
+      ];
+      if (!validPreviousStates.includes(order.shippingStatus)) {
+        throw new BadRequestException(
+          'Order can only be returned to sender from delayed, cancelled, or lost status',
+        );
+      }
+    }
+    // If the new status is a special status, allow it
+    else if (specialStatuses.includes(newShippingStatus)) {
+      // Allow the status change
+    }
+    // Handle normal flow for purchase orders
+    else if (order.type === orderType.purchase) {
+      const purchaseFlow = {
+        [shippingStatus.DISPATCHED_FOR_PICKUP]: [shippingStatus.PICKED_UP],
+        [shippingStatus.PICKED_UP]: [shippingStatus.LEFT_CARRIER_LOCATION],
+        [shippingStatus.LEFT_CARRIER_LOCATION]: [shippingStatus.IN_TRANSIT],
+        [shippingStatus.IN_TRANSIT]: [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY],
+        [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [shippingStatus.OUT_FOR_DELIVERY],
+        [shippingStatus.OUT_FOR_DELIVERY]: [shippingStatus.AVAILABLE_FOR_PICKUP],
+        [shippingStatus.AVAILABLE_FOR_PICKUP]: [shippingStatus.DELIVERED],
+      };
+
+      if (!purchaseFlow[order.shippingStatus]?.includes(newShippingStatus)) {
+        throw new BadRequestException(
+          `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus} for purchase order`,
+        );
+      }
+    }
+    // Handle flow for exchange orders
+    else if (order.type === orderType.exchange || order.type === orderType.exchange_plus_cash) {
+      const exchangeFlow = {
+        [shippingStatus.AVAILABLE_FOR_PICKUP]: [shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP],
+        [shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP]: [shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER],
+        [shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER]: [shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY],
+        [shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY]: [shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER],
+        [shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER]: [shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED],
+      };
+
+      // For exchange orders, use the exchange flow after AVAILABLE_FOR_PICKUP
+      if (order.shippingStatus === shippingStatus.AVAILABLE_FOR_PICKUP || 
+          Object.keys(exchangeFlow).includes(order.shippingStatus)) {
+        if (!exchangeFlow[order.shippingStatus]?.includes(newShippingStatus)) {
+          throw new BadRequestException(
+            `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus} for exchange order`,
+          );
+        }
+      } else {
+        // Before AVAILABLE_FOR_PICKUP, use the same flow as purchase orders
+        const initialFlow = {
+          [shippingStatus.DISPATCHED_FOR_PICKUP]: [shippingStatus.PICKED_UP],
+          [shippingStatus.PICKED_UP]: [shippingStatus.LEFT_CARRIER_LOCATION],
+          [shippingStatus.LEFT_CARRIER_LOCATION]: [shippingStatus.IN_TRANSIT],
+          [shippingStatus.IN_TRANSIT]: [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY],
+          [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [shippingStatus.OUT_FOR_DELIVERY],
+          [shippingStatus.OUT_FOR_DELIVERY]: [shippingStatus.AVAILABLE_FOR_PICKUP],
+        };
+
+        if (!initialFlow[order.shippingStatus]?.includes(newShippingStatus)) {
+          throw new BadRequestException(
+            `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus}`,
+          );
+        }
+      }
+    }
+
+    // Update the shipping status
+    order.shippingStatus = newShippingStatus;
+
+    // Update order status and timestamp for final states
+    if (newShippingStatus === shippingStatus.DELIVERED || 
+        newShippingStatus === shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED) {
+      order.status = OrderStatus.COMPLETED;
+      order.deliveredAt = new Date();
+    }
+
+    await this.Order.save(order);
+
+    return {
+      status: 'success',
+      message: `Shipping status updated to ${newShippingStatus}`,
+      data: order,
+    };
+  }
+
+  async findAvailableOrdersForDelivery() {
+    const orders = await this.Order.find({
+      where: {
+        status: OrderStatus.AWAITING_SHIPMENT,
+        deliveryman: null,
+      },
+      relations: [
+        'products',
+        'user',
+        'user.addresses', // Include delivery address
+      ],
+      order: {
+        createdAt: 'ASC', // Oldest orders first
+      },
+    });
+
+    if (!orders.length) {
+      return {
+        status: 'success',
+        message: 'No orders available for delivery at the moment',
+        data: [],
+      };
+    }
+
+    return {
+      status: 'success',
+      message: 'Found orders ready for delivery',
+      data: orders,
+    };
+  }
+
+  async getOrderDetails(orderId: string) {
+    const order = await this.Order.findOne({
+      where: { id: orderId },
+      relations: [
+        'products',
+        'user',
+        'user.addresses',
+        'deliveryman',
+        'offeredProduct',
+      ],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // Structure the response
+    const orderDetails = {
+      orderId: order.id,
+      orderType: order.type,
+      status: {
+        orderStatus: order.status,
+        shippingStatus: order.shippingStatus,
+        paidStatus: order.paidStatus
+      },
+      timestamps: {
+        createdAt: order.createdAt,
+        confirmedAt: order.confirmedAt,
+        shippedAt: order.shippedAt,
+        deliveredAt: order.deliveredAt,
+        cancelledAt: order.cancelledAt
+      },
+      customerInfo: {
+        id: order.user.id,
+        firstName: order.user.firstName,
+        lastName: order.user.lastName,
+        email: order.user.email,
+        phone: order.user.phone,
+        image: order.user.image,
+        addresses: order.user.addresses.map(addr => ({
+          id: addr.id,
+          fullName: addr.fullName,
+          streetAddress: addr.streetAddress,
+          city: addr.city,
+          state: addr.state,
+          country: addr.country,
+          postalCode: addr.postalCode,
+          phoneNumber: addr.phoneNumber
+        }))
+      },
+      deliveryInfo: order.deliveryman ? {
+        id: order.deliveryman.id,
+        firstName: order.deliveryman.firstName,
+        lastName: order.deliveryman.lastName,
+        phone: order.deliveryman.phone,
+        image: order.deliveryman.image
+      } : null,
+      products: order.products.map(product => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        category: product.category,
+        condition: product.condition,
+        type: product.type,
+        status: product.status,
+        location: product.location,
+        imageUrl: product.imageUrl,
+        createdAt: product.createdAt
+      })),
+      offeredProduct: order.offeredProduct ? {
+        id: order.offeredProduct.id,
+        name: order.offeredProduct.name,
+        description: order.offeredProduct.description,
+        price: order.offeredProduct.price,
+        condition: order.offeredProduct.condition,
+        type: order.offeredProduct.type,
+        status: order.offeredProduct.status,
+        location: order.offeredProduct.location,
+        imageUrl: order.offeredProduct.imageUrl,
+        createdAt: order.offeredProduct.createdAt
+      } : null,
+      pricing: {
+        totalPrice: order.price,
+        usedPoints: order.usedPoints,
+        newPoints: order.newPoints,
+        cashAmount: order.cashAmount
+      },
+      paymentMethod: order.paymentMethod
+    };
+
+    return {
+      status: 'success',
+      message: 'Order details fetched successfully',
+      data: orderDetails
+    };
+  }
+
+  async getUserOrders(userId: string) {
+    const orders = await this.Order.find({
+      where: { user: { id: userId } },
+      relations: [
+        'products',
+        'user'
+      ],
+      order: {
+        createdAt: 'DESC'
+      }
+    });
+
+    if (!orders.length) {
+      return {
+        status: 'success',
+        message: 'No orders found',
+        data: []
+      };
+    }
+
+    const orderOverviews = orders.map(order => ({
+      orderId: order.id,
+      totalPrice: order.price,
+      status: order.status,
+      products: order.products.map(product => ({
+        name: product.name
+      }))
+    }));
+
+    return {
+      status: 'success',
+      message: 'Orders fetched successfully',
+      data: orderOverviews
+    };
+  }
+
+  async getReceivedOrders(sellerId: string) {
+    const orders = await this.Order.find({
+      where: {
+        products: {
+          user: { id: sellerId }
+        }
+      },
+      relations: [
+        'products',
+        'products.user',
+        'user'
+      ],
+      order: {
+        createdAt: 'DESC'
+      }
+    });
+
+    if (!orders.length) {
+      return {
+        status: 'success',
+        message: 'No orders found',
+        data: []
+      };
+    }
+
+    const orderOverviews = orders.map(order => ({
+      orderId: order.id,
+      customerName: `${order.user.firstName} ${order.user.lastName}`,
+      totalPrice: order.price,
+      status: order.status,
+      products: order.products
+        .filter(p => p.user.id === sellerId)
+        .map(product => ({
+          name: product.name
+        }))
+    }));
+
+    return {
+      status: 'success',
+      message: 'Received orders fetched successfully',
+      data: orderOverviews
+    };
+  }
+
+  async updateOrderPaymentStatus(
+    orderId: string,
+    userId: string,
+    newPaidStatus: paid_status
+  ) {
+    const order = await this.Order.findOne({
+      where: { id: orderId },
+      relations: ['user', 'products', 'products.user']
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // Check if the user is the seller of any product in the order
+    const isSeller = order.products.some(
+      product => product.user.id === userId
+    );
+
+    if (!isSeller) {
+      throw new ForbiddenException(
+        'You are not authorized to update payment status for this order'
+      );
+    }
+
+    // Update the payment status
+    order.paidStatus = newPaidStatus;
+
+    await this.Order.save(order);
+
+    return {
+      status: 'success',
+      message: `Order payment status updated to ${newPaidStatus}`,
+      data: {
+        orderId: order.id,
+        paidStatus: order.paidStatus
+      }
+    };
+  }
+
+
 }

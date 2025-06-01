@@ -77,4 +77,6 @@ export class Product {
   order: Order;
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
+
+
 }

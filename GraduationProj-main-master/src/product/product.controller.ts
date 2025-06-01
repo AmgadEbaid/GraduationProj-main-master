@@ -123,4 +123,6 @@ export class ProductController {
     const user = req['user'] as any;
     return this.productService.remove(id, user.id);
   }
+
+
 }
