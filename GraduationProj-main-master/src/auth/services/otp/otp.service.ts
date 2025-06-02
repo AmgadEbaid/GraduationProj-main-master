@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Otp } from 'entities/Otp';
@@ -34,13 +40,13 @@ export class OtpService {
 
     // Generate OTP
     const otpCode = this.generateOtp();
-    
+
     // Set expiration time (10 minutes from now)
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
     // Delete any existing OTPs for this email
-    await this.otpRepository.delete({ email :email });
+    await this.otpRepository.delete({ email: email });
 
     // Create new OTP
     const otp = this.otpRepository.create({
@@ -65,17 +71,17 @@ export class OtpService {
    * @returns The verified OTP entity
    */
   async verifyOtp(email: string, otpCode: string) {
-    const otp = await this.otpRepository.findOne({ 
-      where: { email: email, otp: otpCode } 
+    const otp = await this.otpRepository.findOne({
+      where: { email: email, otp: otpCode },
     });
 
     if (!otp) {
-      throw new BadRequestException('Invalid OTP');
+      throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST);
     }
 
     // Check if OTP is expired
     if (new Date() > otp.expiresAt) {
-      throw new BadRequestException('OTP expired');
+      throw new HttpException('OTP expired', HttpStatus.BAD_REQUEST);
     }
 
     // Mark OTP as verified
@@ -83,7 +89,7 @@ export class OtpService {
     await this.otpRepository.save(otp);
 
     // Update user status if needed
-    const user = await this.userRepository.findOne({ where: { email :email } });
+    const user = await this.userRepository.findOne({ where: { email: email } });
     if (user && !user.status) {
       user.status = true;
       await this.userRepository.save(user);
@@ -99,15 +105,15 @@ export class OtpService {
    */
   async resendOtp(email: string): Promise<Otp> {
     // Check if user exists
-    const user = await this.userRepository.findOne({ where: { email :email } });
+    const user = await this.userRepository.findOne({ where: { email: email } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     // Check if there's an existing OTP and it was created less than 1 minute ago
-    const existingOtp = await this.otpRepository.findOne({ 
-      where: { email :email },
-      order: { createdAt: 'DESC' }
+    const existingOtp = await this.otpRepository.findOne({
+      where: { email: email },
+      order: { createdAt: 'DESC' },
     });
 
     if (existingOtp) {
@@ -115,7 +121,9 @@ export class OtpService {
       oneMinuteAgo.setMinutes(oneMinuteAgo.getMinutes() - 1);
 
       if (existingOtp.createdAt > oneMinuteAgo) {
-        throw new BadRequestException('Please wait before requesting a new OTP');
+        throw new BadRequestException(
+          'Please wait before requesting a new OTP',
+        );
       }
     }
 
@@ -129,11 +137,11 @@ export class OtpService {
    * @returns True if the user has a verified OTP
    */
   async isOtpVerified(email: string): Promise<boolean> {
-    const otp = await this.otpRepository.findOne({ 
-      where: { email :email, isVerified: true },
-      order: { createdAt: 'DESC' }
+    const otp = await this.otpRepository.findOne({
+      where: { email: email, isVerified: true },
+      order: { createdAt: 'DESC' },
     });
 
     return !!otp;
   }
-} 
+}

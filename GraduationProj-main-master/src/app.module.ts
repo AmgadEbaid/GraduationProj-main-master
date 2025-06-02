@@ -22,7 +22,7 @@ import { ChatModule } from './chat/chat.module';
 import { Chat } from 'entities/Chat';
 import { Message } from 'entities/Message';
 import { FirebaseModule } from './firebase/firebase.module';
-
+import { OrderProduct } from 'entities/OrderProduct';
 
 @Module({
   imports: [
@@ -39,7 +39,17 @@ import { FirebaseModule } from './firebase/firebase.module';
       database: process.env.DB_NAME,
       synchronize: true,
       logging: true,
-      entities: [User, Otp, Address, Order, Product, Review, Message, Chat],
+      entities: [
+        User,
+        Otp,
+        Address,
+        Order,
+        Product,
+        Review,
+        Message,
+        Chat,
+        OrderProduct,
+      ],
     }),
     UserModule,
     AuthModule,
