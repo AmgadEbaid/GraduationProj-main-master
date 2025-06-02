@@ -10,6 +10,7 @@ import {
   Req,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -117,12 +118,23 @@ export class ProductController {
     const user = req['user'] as any;
     return this.productService.update(id, updateProductDto, user.id, file);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  search(
+    @Query('q') query: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as any;
+    return this.productService.searchProducts(query, page, limit, user.id);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   remove(@Param('id') id: string, @Req() req: Request) {
     const user = req['user'] as any;
     return this.productService.remove(id, user.id);
   }
-
-
 }

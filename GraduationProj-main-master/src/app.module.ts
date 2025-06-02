@@ -23,6 +23,8 @@ import { Chat } from 'entities/Chat';
 import { Message } from 'entities/Message';
 import { FirebaseModule } from './firebase/firebase.module';
 import { OrderProduct } from 'entities/OrderProduct';
+import { SearchHistory } from 'entities/SearchHistory';
+import { SearchHistoryModule } from './search-history/search-history.module';
 
 @Module({
   imports: [
@@ -49,6 +51,7 @@ import { OrderProduct } from 'entities/OrderProduct';
         Message,
         Chat,
         OrderProduct,
+        SearchHistory,
       ],
     }),
     UserModule,
@@ -61,6 +64,7 @@ import { OrderProduct } from 'entities/OrderProduct';
     ChatModule,
     MessageModule,
     FirebaseModule,
+    SearchHistoryModule,
   ],
   controllers: [AppController],
   providers: [

@@ -5,10 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from 'entities/Product';
 import { User } from 'entities/User';
 import { JwtModule } from '@nestjs/jwt';
+import { SearchHistory } from 'entities/SearchHistory';
+import { SearchHistoryService } from 'src/search-history/search-history.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, User]), JwtModule],
+  imports: [
+    TypeOrmModule.forFeature([Product, User, SearchHistory]),
+    JwtModule,
+  ],
   controllers: [ProductController],
-  providers: [ProductService],
+  providers: [ProductService, SearchHistoryService],
 })
 export class ProductModule {}

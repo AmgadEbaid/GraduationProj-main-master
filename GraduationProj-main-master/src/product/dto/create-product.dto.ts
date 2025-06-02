@@ -7,7 +7,12 @@ import {
   IsString,
   Validate,
 } from 'class-validator';
-import { ConditionType, ProductStatus, ProductType } from 'entities/Product';
+import {
+  ConditionType,
+  ProductCategories,
+  ProductStatus,
+  ProductType,
+} from 'entities/Product';
 
 export class CreateProductDto {
   @IsString()
@@ -20,6 +25,10 @@ export class CreateProductDto {
   @IsNotEmpty()
   @IsString()
   description: string;
+
+  @IsNotEmpty()
+  @IsEnum(ProductCategories)
+  category: ProductCategories;
 
   @IsEnum(ProductType)
   @IsNotEmpty()

@@ -10,6 +10,7 @@ import { Order } from './Order';
 import { Review } from './review';
 import { Product } from './Product';
 import { Message } from './Message';
+import { SearchHistory } from './SearchHistory';
 // import { Message } from './Message';
 
 export enum Roles {
@@ -61,7 +62,7 @@ export class User {
   role: Roles;
   // Flag to indicate if the user was created via OAuth (Google, etc.)
   @Column({ default: false })
-  isOAuthUser: boolean; 
+  isOAuthUser: boolean;
   @OneToMany(() => Product, (product) => product.user)
   products: Product[];
   @OneToMany(() => Address, (address) => address.user)
@@ -69,7 +70,7 @@ export class User {
   // Orders created by this user (as a customer)
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
-  
+
   // Orders being delivered by this user (as a delivery person)
   @OneToMany(() => Order, (order) => order.deliveryman)
   deliveryOrders: Order[];
@@ -77,4 +78,7 @@ export class User {
   review: Review[];
   @OneToMany(() => Message, (message) => message.sender)
   messages: Message[];
-  }
+
+  @OneToMany(() => SearchHistory, (searchHistory) => searchHistory.user)
+  searchHistories: SearchHistory[];
+}

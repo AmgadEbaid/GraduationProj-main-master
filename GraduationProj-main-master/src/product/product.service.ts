@@ -9,11 +9,13 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product, ProductStatus, ProductType } from 'entities/Product';
 import { Not, Repository } from 'typeorm';
+import { SearchHistoryService } from 'src/search-history/search-history.service';
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly ProductRepository: Repository<Product>,
+    private readonly searchHistoryService: SearchHistoryService,
   ) {}
   async create(createProductDto: CreateProductDto, userId: string, image: any) {
     if (!image || !image.location) {
@@ -166,6 +168,31 @@ export class ProductService {
     };
   }
 
+  async searchProducts(query: string, page = 1, limit = 20, userId: string) {
+    const keywords = query.trim().split(/\s+/);
+
+    const products = await this.ProductRepository.createQueryBuilder('product')
+      .where(
+        keywords
+          .map(
+            (_, i) =>
+              `(product.name LIKE :kw${i} OR product.description LIKE :kw${i} OR product.category LIKE :kw${i})`,
+          )
+          .join(' AND '),
+        Object.fromEntries(keywords.map((word, i) => [`kw${i}`, `%${word}%`])),
+      )
+      .skip((page - 1) * limit) // offset
+      .take(limit) // limit
+      .getMany();
+
+    await this.searchHistoryService.saveSearchHistory(keywords, userId);
+    return {
+      status: 'success',
+      message: 'Products fetched successfully',
+      data: { products },
+    };
+  }
+
   async remove(id: string, userId: string) {
     const product = await this.ProductRepository.findOne({
       where: { id },
@@ -187,8 +214,4 @@ export class ProductService {
     await this.ProductRepository.delete(id);
     return;
   }
-
-
-
-
 }
