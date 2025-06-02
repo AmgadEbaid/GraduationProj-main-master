@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Patch,
   Req,
   UploadedFile,
@@ -66,5 +67,11 @@ export class UserController {
     // file.location contains the public URL to the image
 
     return this.userService.updateUserDetails(updateUserDetails, user.id, file);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('getUserDetails')
+  async getUserDetails(@Req() req: Request) {
+    const user = req['user'] as any;
+    return this.userService.findOne(user.id);
   }
 }

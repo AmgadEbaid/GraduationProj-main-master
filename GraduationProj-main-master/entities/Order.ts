@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Product } from './Product';
 import { User } from './User';
-import e from 'express';
+import { OrderProduct } from './OrderProduct';
 
 export enum orderType {
   purchase = 'purchase',
@@ -78,6 +78,7 @@ export enum shippingStatus {
 }
 
 @Entity({ name: 'orders' })
+@Entity({ name: 'order' })
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -105,10 +106,6 @@ export class Order {
     enum: paymentMethod,
   })
   paymentMethod: paymentMethod;
-
-  @ManyToOne(() => Product, { nullable: true })
-  offeredProduct?: Product;
-
   @Column({ type: 'float', nullable: true })
   cashAmount?: number;
 
@@ -143,4 +140,11 @@ export class Order {
   deliveredAt: Date;
   @Column({ type: 'timestamp', nullable: true })
   confirmedAt: Date; // When the order was confirmed by the seller
+  @ManyToOne(() => Product, { nullable: true })
+  offeredProduct?: Product;
+
+  @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.order, {
+    eager: true,
+  })
+  orderItems: OrderProduct[];
 }

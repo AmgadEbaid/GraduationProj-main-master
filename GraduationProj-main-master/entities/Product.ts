@@ -9,6 +9,7 @@ import {
 import { Order } from './Order';
 import { Review } from './review';
 import { User } from './User';
+import { OrderProduct } from './OrderProduct';
 export enum ProductType {
   BUY = 'buy',
   REPAIR = 'repair',
@@ -66,6 +67,9 @@ export class Product {
   })
   category: ProductCategories;
 
+  @Column({ type: 'bool', default: false })
+  isFeatured: boolean; // Indicates if the product is featured
+
   @Column({ nullable: true })
   location: string; // Location of the product, e.g., city or area
   @CreateDateColumn()
@@ -78,5 +82,6 @@ export class Product {
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
 
-
+  @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
+  orderItems: OrderProduct[]; // List of order items associated with the product
 }
