@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  JoinColumn
 } from 'typeorm';
 import { Order } from './Order';
 import { Review } from './review';
@@ -24,6 +25,7 @@ export enum ProductStatus {
   AVAILABLE = 'available', // Product is available for purchase or swapping
   ON_HOLD = 'on_hold', // Product is currently on hold
   SOLD = 'sold', // Product is sold successfully
+  Repaired = 'repaired', // Product is repaired
 }
 export enum ProductCategories {
   Chair = 'chair',
@@ -79,5 +81,6 @@ export class Product {
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
   @ManyToOne(() => Repair, (repair) => repair.products)
+  @JoinColumn({ name: 'repairId' })
   repair: Repair;
 }

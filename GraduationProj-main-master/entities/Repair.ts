@@ -10,6 +10,19 @@ export enum RepairStatus {
     cancelled = 'cancelled'
 }
 
+export enum PaymentStatus {
+    Unpaid = 'unpaid',
+    Pending = 'pending',
+    Paid = 'paid'
+}
+
+export enum PaymentMethod {
+    Paypal = 'paypal',
+    Payoneer = 'payoneer',
+    Cash = 'cash',
+    Card = 'card'
+}
+
 @Entity()
 export class Repair {
     @PrimaryGeneratedColumn('uuid')
@@ -22,6 +35,25 @@ export class Repair {
         nullable: false
     })
     status: RepairStatus;
+
+    @Column({ nullable: false })
+    cost: string
+
+    @Column({
+        type: 'enum',
+        enum: PaymentStatus,
+        default: PaymentStatus.Unpaid,
+        nullable: false
+    })
+    paymentStatus: PaymentStatus;
+
+    @Column({
+        type: 'enum',
+        enum: PaymentMethod,
+        default: PaymentMethod.Card,
+        nullable: false
+    })
+    paymentMethod: PaymentMethod;
 
     @Column({ default: new Date().toLocaleString() })
     createdAt: string
