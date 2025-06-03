@@ -30,13 +30,26 @@ export enum PriceType {
   Negotiable = 'negotiable', // Price is negotiable
 }
 export enum ProductCategories {
-  Chair = 'chair',
-  Table = 'table',
-  Sofa = 'sofa',
-  Bed = 'bed',
-  Desk = 'desk',
-  Cabinet = 'cabinet',
-  Lighting = 'lighting',
+  LivingRoom = 'Living Room',
+  Bedroom = 'Bedroom',
+  DiningKitchen = 'Dining & Kitchen',
+  HomeOffice = 'Home Office',
+  OutdoorPatio = 'Outdoor & Patio',
+  KidsNursery = "Kids' & Nursery",
+  StorageFurniture = 'Storage Furniture',
+  AccentFurniture = 'Accent Furniture',
+  SofasSectionals = 'Sofas & Sectionals',
+  BedsHeadboards = 'Beds & Headboards',
+  Tables = 'Tables',
+  Chairs = 'Chairs',
+  BookshelvesCabinets = 'Bookshelves & Cabinets',
+  DressersChests = 'Dressers & Chests',
+  TVStandsMediaConsoles = 'TV Stands & Media Consoles',
+  Desks = 'Desks',
+  OfficeChairs = 'Office Chairs',
+  PatioSets = 'Patio Sets',
+  DiningSets = 'Dining Sets',
+  Mattresses = 'Mattresses',
 }
 @Entity({ name: 'product' })
 export class Product {
@@ -68,7 +81,6 @@ export class Product {
   @Column({
     type: 'enum',
     enum: ProductCategories,
-    nullable: true,
   })
   category: ProductCategories;
 
