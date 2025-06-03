@@ -50,6 +50,7 @@ export enum ProductCategories {
   PatioSets = 'Patio Sets',
   DiningSets = 'Dining Sets',
   Mattresses = 'Mattresses',
+  OtherFurniture = 'Other Furniture',
 }
 @Entity({ name: 'product' })
 export class Product {
