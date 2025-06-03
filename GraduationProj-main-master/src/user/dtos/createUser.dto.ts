@@ -12,12 +12,6 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export enum UserRole {
-  User = 'user',
-  Workshop = 'workshop',
-  Delivery = 'delivery',
-}
-
 export class createUser {
   @ApiProperty({
     description: 'User name (4-20 characters)',
@@ -77,9 +71,4 @@ export class createUser {
   @IsPhoneNumber('EG')
   @IsString()
   phone: string;
-
-  @IsEnum(UserRole, {
-    message: 'Role must be either user, workshop, or repair',
-  })
-  rule: UserRole;
 }

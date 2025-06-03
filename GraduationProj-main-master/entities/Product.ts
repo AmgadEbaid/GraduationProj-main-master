@@ -25,6 +25,10 @@ export enum ProductStatus {
   ON_HOLD = 'on_hold', // Product is currently on hold
   SOLD = 'sold', // Product is sold successfully
 }
+export enum PriceType {
+  Fixed = 'fixed', // Fixed price
+  Negotiable = 'negotiable', // Price is negotiable
+}
 export enum ProductCategories {
   Chair = 'chair',
   Table = 'table',
@@ -64,16 +68,17 @@ export class Product {
   @Column({
     type: 'enum',
     enum: ProductCategories,
+    nullable: true,
   })
   category: ProductCategories;
-
-  @Column({ type: 'bool', default: false })
-  isFeatured: boolean; // Indicates if the product is featured
 
   @Column({ nullable: true })
   location: string; // Location of the product, e.g., city or area
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ type: 'enum', enum: PriceType, default: PriceType.Fixed })
+  priceType: PriceType;
 
   @ManyToOne(() => User, (user) => user.products, { eager: false })
   user: User;
@@ -83,5 +88,5 @@ export class Product {
   review: Review[];
 
   @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
-  orderItems: OrderProduct[]; // List of order items associated with the product
+  orderItems: OrderProduct[];
 }
