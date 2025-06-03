@@ -46,7 +46,7 @@ export class Product {
   name: string;
   @Column({ type: 'float', nullable: false })
   price: number;
-  @Column({ type: 'varchar', nullable: false })
+  @Column('longtext', { nullable: true })
   description: string;
   @Column()
   imageUrl: string;
