@@ -7,11 +7,13 @@ import { User } from 'entities/User';
 import { JwtModule } from '@nestjs/jwt';
 import { SearchHistory } from 'entities/SearchHistory';
 import { SearchHistoryService } from 'src/search-history/search-history.service';
+import { SearchHistoryModule } from 'src/search-history/search-history.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, User, SearchHistory]),
     JwtModule,
+    SearchHistoryModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, SearchHistoryService],

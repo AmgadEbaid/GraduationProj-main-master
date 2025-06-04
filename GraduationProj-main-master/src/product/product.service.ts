@@ -10,6 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product, ProductStatus, ProductType } from 'entities/Product';
 import { Not, Repository } from 'typeorm';
 import { SearchHistoryService } from 'src/search-history/search-history.service';
+import axios from 'axios';
+
 @Injectable()
 export class ProductService {
   constructor(
@@ -17,6 +19,7 @@ export class ProductService {
     private readonly ProductRepository: Repository<Product>,
     private readonly searchHistoryService: SearchHistoryService,
   ) {}
+  private readonly apiUrl = 'https://api.mymemory.translated.net/get';
   async create(createProductDto: CreateProductDto, userId: string, image: any) {
     if (!image || !image.location) {
       throw new HttpException(
@@ -171,18 +174,58 @@ export class ProductService {
   async searchProducts(query: string, page = 1, limit = 20, userId: string) {
     const keywords = query.trim().split(/\s+/);
 
+    const translatedKeywords = await Promise.all(
+      keywords.map(async (word) => {
+        const language = this.detectLanguage(word);
+        if (language === 'ar') {
+          return {
+            original: word,
+            translated: await this.translateText(word, 'ar', 'en'),
+            type: 'ar', // For name/description
+          };
+        } else {
+          return {
+            original: word,
+            translated: await this.translateText(word, 'en', 'ar'),
+            type: 'en', // For category
+          };
+        }
+      }),
+    );
+    console.log('Translated Keywords:', translatedKeywords);
+
+    const whereConditions = translatedKeywords
+      .map((kw, i) => {
+        const conditions = [];
+
+        if (kw.type === 'ar') {
+          conditions.push(
+            `(product.name LIKE :original${i} OR product.description LIKE :original${i})`,
+            `(product.category LIKE :translated${i})`,
+          );
+        } else {
+          conditions.push(
+            `(product.name LIKE :translated${i} OR product.description LIKE :translated${i})`,
+            `(product.category LIKE :original${i})`,
+          );
+        }
+
+        return `(${conditions.join(' OR ')})`;
+      })
+      .join(' AND ');
+
+    console.log('Where Conditions:', whereConditions);
+    const parameters = Object.fromEntries(
+      translatedKeywords.flatMap((kw, i) => [
+        [`original${i}`, `%${kw.original}%`],
+        [`translated${i}`, `%${kw.translated}%`],
+      ]),
+    );
+    console.log('Parameters:', parameters);
     const products = await this.ProductRepository.createQueryBuilder('product')
-      .where(
-        keywords
-          .map(
-            (_, i) =>
-              `(product.name LIKE :kw${i} OR product.description LIKE :kw${i} OR product.category LIKE :kw${i})`,
-          )
-          .join(' AND '),
-        Object.fromEntries(keywords.map((word, i) => [`kw${i}`, `%${word}%`])),
-      )
-      .skip((page - 1) * limit) // offset
-      .take(limit) // limit
+      .where(whereConditions, parameters)
+      .skip((page - 1) * limit)
+      .take(limit)
       .getMany();
 
     await this.searchHistoryService.saveSearchHistory(keywords, userId);
@@ -213,5 +256,28 @@ export class ProductService {
     }
     await this.ProductRepository.delete(id);
     return;
+  }
+  private async translateText(
+    text: string,
+    from: string,
+    to: string,
+  ): Promise<string> {
+    try {
+      const response = await axios.get(this.apiUrl, {
+        params: {
+          q: text,
+          langpair: `${from}|${to}`,
+        },
+      });
+
+      return response.data.responseData.translatedText;
+    } catch (error) {
+      console.error('Translation error:', error.message);
+      return text; // fallback to original if translation fails
+    }
+  }
+  private detectLanguage(word: string): 'ar' | 'en' {
+    const arabicPattern = /[\u0600-\u06FF]/;
+    return arabicPattern.test(word) ? 'ar' : 'en';
   }
 }
