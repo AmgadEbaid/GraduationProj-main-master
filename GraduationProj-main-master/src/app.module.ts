@@ -28,7 +28,6 @@ import { SearchHistoryModule } from './search-history/search-history.module';
 import { RepairModule } from './repair/repair.module';
 import { Repair } from 'entities/Repair';
 
-
 @Module({
   imports: [
     JwtModule.register({
@@ -56,7 +55,6 @@ import { Repair } from 'entities/Repair';
         OrderProduct,
         SearchHistory,
       ],
-      entities: [User, Otp, Address, Order, Product, Review, Message, Chat, Repair],
     }),
     UserModule,
     AuthModule,
