@@ -171,7 +171,13 @@ export class ProductService {
     };
   }
 
-  async searchProducts(query: string, page = 1, limit = 20, userId: string) {
+  async searchProducts(
+    query: string,
+    page = 1,
+    limit = 20,
+    userId: string,
+    saveSearchHistory? = true,
+  ) {
     const keywords = query.trim().split(/\s+/);
 
     const translatedKeywords = await Promise.all(
@@ -192,8 +198,6 @@ export class ProductService {
         }
       }),
     );
-    console.log('Translated Keywords:', translatedKeywords);
-
     const whereConditions = translatedKeywords
       .map((kw, i) => {
         const conditions = [];
@@ -213,22 +217,21 @@ export class ProductService {
         return `(${conditions.join(' OR ')})`;
       })
       .join(' AND ');
-
-    console.log('Where Conditions:', whereConditions);
     const parameters = Object.fromEntries(
       translatedKeywords.flatMap((kw, i) => [
         [`original${i}`, `%${kw.original}%`],
         [`translated${i}`, `%${kw.translated}%`],
       ]),
     );
-    console.log('Parameters:', parameters);
     const products = await this.ProductRepository.createQueryBuilder('product')
       .where(whereConditions, parameters)
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();
 
-    await this.searchHistoryService.saveSearchHistory(keywords, userId);
+    if (userId && saveSearchHistory) {
+      await this.searchHistoryService.saveSearchHistory(keywords, userId);
+    }
     return {
       status: 'success',
       message: 'Products fetched successfully',
