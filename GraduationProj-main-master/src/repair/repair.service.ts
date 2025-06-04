@@ -16,7 +16,6 @@ export class RepairService {
   // get repair requests based on user role
   async getAllRepairs(userId: string) {
     const user = await this.User.findOne({ where: { id: userId } });
-    // const products = await this.Product.find();
 
     if (user.role === 'user') {
       const repairs = await this.Repair.find({
@@ -78,7 +77,7 @@ export class RepairService {
 
     if (!cost) {
       throw new HttpException(
-        "the repair cost is't define",
+        "the repair cost isn't define",
         HttpStatus.BAD_REQUEST,
       );
     }
