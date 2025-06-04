@@ -43,8 +43,8 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
   @Post('signup')
   async signup(@Body() User: createUser) {
-    const signupUser = await this.authservice.signUp(User);
 
+    const signupUser = await this.authservice.signUp(User);
     const otp: Otp = await this.otpService.createOtp(signupUser.email);
     return {
       message:
@@ -53,6 +53,7 @@ export class AuthController {
       expiresAt: otp.expiresAt,
       accountStatus: 'pending_verification',
     };
+    
   }
 
   @ApiOperation({ summary: 'Login with email and password' })

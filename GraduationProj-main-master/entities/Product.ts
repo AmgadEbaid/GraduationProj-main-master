@@ -5,11 +5,13 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  JoinColumn
 } from 'typeorm';
 import { Order } from './Order';
 import { Review } from './review';
 import { User } from './User';
 import { OrderProduct } from './OrderProduct';
+import { Repair } from './Repair';
 export enum ProductType {
   BUY = 'buy',
   REPAIR = 'repair',
@@ -24,6 +26,7 @@ export enum ProductStatus {
   AVAILABLE = 'available', // Product is available for purchase or swapping
   ON_HOLD = 'on_hold', // Product is currently on hold
   SOLD = 'sold', // Product is sold successfully
+  Repaired = 'repaired', // Product is repaired
 }
 export enum PriceType {
   Fixed = 'fixed', // Fixed price
@@ -102,4 +105,7 @@ export class Product {
 
   @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
   orderItems: OrderProduct[];
+  @ManyToOne(() => Repair, (repair) => repair.products)
+  @JoinColumn({ name: 'repairId' })
+  repair: Repair;
 }

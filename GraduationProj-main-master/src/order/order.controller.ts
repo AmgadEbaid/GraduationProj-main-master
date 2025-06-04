@@ -132,6 +132,4 @@ export class OrderController {
   async findAvailableOrdersForDelivery() {
     return this.orderService.findAvailableOrdersForDelivery();
   }
-  
-   
 }
