@@ -29,6 +29,13 @@ export class RepairService {
         },
       });
 
+      if (repairs.length < 1) {
+        throw new HttpException(
+          'you don\'t have any repair rquests yet',
+          HttpStatus.BAD_REQUEST
+        )
+      }
+
       return {
         status: 'success',
         message: 'all repair requests has been returned successfully',
@@ -48,6 +55,13 @@ export class RepairService {
         },
       });
 
+      if (repairs.length < 1) {
+        throw new HttpException(
+          'you don\'t have any repair rquests yet',
+          HttpStatus.BAD_REQUEST
+        )
+      }
+
       return {
         status: 'success',
         message: 'all repair requests has been returned successfully',
@@ -56,7 +70,7 @@ export class RepairService {
     }
 
     throw new HttpException(
-      'there is no repair requests',
+      'there isn\'t repair repair requests',
       HttpStatus.BAD_REQUEST,
     );
   }
