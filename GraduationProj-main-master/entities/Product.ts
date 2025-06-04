@@ -4,12 +4,12 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Order } from './Order';
 import { Review } from './review';
 import { User } from './User';
-import { OrderProduct } from './OrderProduct';
 export enum ProductType {
   BUY = 'buy',
   REPAIR = 'repair',
@@ -95,11 +95,8 @@ export class Product {
 
   @ManyToOne(() => User, (user) => user.products, { eager: false })
   user: User;
-  @ManyToOne(() => Order, (order) => order.products)
+  @OneToOne(() => Order, (order) => order.product)
   order: Order;
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
-
-  @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
-  orderItems: OrderProduct[];
 }
