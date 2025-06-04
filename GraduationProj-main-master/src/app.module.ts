@@ -22,7 +22,6 @@ import { ChatModule } from './chat/chat.module';
 import { Chat } from 'entities/Chat';
 import { Message } from 'entities/Message';
 import { FirebaseModule } from './firebase/firebase.module';
-import { OrderProduct } from 'entities/OrderProduct';
 import { SearchHistory } from 'entities/SearchHistory';
 import { SearchHistoryModule } from './search-history/search-history.module';
 
@@ -50,7 +49,6 @@ import { SearchHistoryModule } from './search-history/search-history.module';
         Review,
         Message,
         Chat,
-        OrderProduct,
         SearchHistory,
       ],
     }),
