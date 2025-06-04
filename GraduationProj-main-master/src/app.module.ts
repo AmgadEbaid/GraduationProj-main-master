@@ -54,6 +54,7 @@ import { Repair } from 'entities/Repair';
         Chat,
         OrderProduct,
         SearchHistory,
+        Repair,
       ],
     }),
     UserModule,
