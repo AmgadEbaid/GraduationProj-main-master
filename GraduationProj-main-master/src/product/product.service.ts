@@ -176,7 +176,7 @@ export class ProductService {
     page = 1,
     limit = 20,
     userId: string,
-    saveSearchHistory? = true,
+    saveSearchHistory = true,
   ) {
     const keywords = query.trim().split(/\s+/);
 
