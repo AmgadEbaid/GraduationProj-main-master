@@ -53,6 +53,7 @@ import { Repair } from 'entities/Repair';
         Chat,
         SearchHistory,
         Review,
+        Repair,
       ],
     }),
     UserModule,
