@@ -141,6 +141,6 @@ export class Order {
   offeredProduct?: Product;
   @ManyToOne(() => User, (user) => user.orders)
   user: User;
-  @OneToOne(() => Product, (product) => product.order)
-  product: Product;
+  @OneToMany(() => Product, (product) => product.order)
+  products: Product[]; // Assuming an order can have multiple products
 }

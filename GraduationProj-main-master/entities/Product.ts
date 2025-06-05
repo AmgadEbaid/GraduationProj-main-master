@@ -95,7 +95,7 @@ export class Product {
 
   @ManyToOne(() => User, (user) => user.products, { eager: false })
   user: User;
-  @OneToOne(() => Order, (order) => order.product)
+  @ManyToOne(() => Order, (order) => order.products)
   order: Order;
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];

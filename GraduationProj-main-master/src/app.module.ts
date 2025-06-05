@@ -50,6 +50,7 @@ import { SearchHistoryModule } from './search-history/search-history.module';
         Message,
         Chat,
         SearchHistory,
+        Review,
       ],
     }),
     UserModule,

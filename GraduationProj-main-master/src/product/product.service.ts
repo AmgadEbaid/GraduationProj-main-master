@@ -2,21 +2,25 @@ import {
   ForbiddenException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product, ProductStatus, ProductType } from 'entities/Product';
-import { Not, Repository } from 'typeorm';
+import { MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { SearchHistoryService } from 'src/search-history/search-history.service';
 import axios from 'axios';
+import { SearchHistory } from 'entities/SearchHistory';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly ProductRepository: Repository<Product>,
+    @InjectRepository(SearchHistory)
+    private readonly SearchHistoryRepository: Repository<SearchHistory>,
     private readonly searchHistoryService: SearchHistoryService,
   ) {}
   private readonly apiUrl = 'https://api.mymemory.translated.net/get';
@@ -175,11 +179,16 @@ export class ProductService {
     query: string,
     page = 1,
     limit = 20,
-    userId: string,
+    userId?: string,
     saveSearchHistory = true,
   ) {
+    if (!query || query.trim() === '') {
+      throw new HttpException(
+        'Search query cannot be empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     const keywords = query.trim().split(/\s+/);
-
     const translatedKeywords = await Promise.all(
       keywords.map(async (word) => {
         const language = this.detectLanguage(word);
@@ -259,6 +268,49 @@ export class ProductService {
     }
     await this.ProductRepository.delete(id);
     return;
+  }
+  async homePageProducts(userId: string, page = 1, limit = 20) {
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+    const searchHistories = await this.SearchHistoryRepository.find({
+      where: { user: { id: userId } },
+      order: { searchedAt: 'DESC' },
+      take: 5,
+    });
+
+    let products = [];
+    if (searchHistories.length === 0) {
+      products = await this.ProductRepository.createQueryBuilder('product')
+        .orderBy('RAND()')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany();
+    } else {
+      const keywords = [
+        ...new Set(searchHistories.map((history) => history.keyword)),
+      ];
+      console.log('keywords', keywords);
+      const productResults = await Promise.all(
+        keywords.map(async (word) => {
+          const product = await this.searchProducts(
+            word,
+            page,
+            Math.floor(limit / keywords.length),
+            userId,
+            false,
+          );
+          return product.data.products;
+        }),
+      );
+      products = productResults.flat();
+    }
+
+    return {
+      status: 'success',
+      message: 'Products fetched successfully',
+      data: { products },
+    };
   }
   private async translateText(
     text: string,

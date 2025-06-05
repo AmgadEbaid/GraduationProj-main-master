@@ -130,7 +130,16 @@ export class ProductController {
     const user = req['user'] as any;
     return this.productService.searchProducts(query, page, limit, user.id);
   }
-
+  @UseGuards(JwtAuthGuard)
+  @Get('home')
+  home(
+    @Req() req: Request,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    const user = req['user'] as any;
+    return this.productService.homePageProducts(user.id, page, limit);
+  }
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   remove(@Param('id') id: string, @Req() req: Request) {
