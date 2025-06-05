@@ -18,6 +18,7 @@ export class FirebaseService {
           'utf-8',
         ),
       );
+
       this.defaultApp = admin.initializeApp({
         credential: admin.credential.cert(
           serviceAccount as admin.ServiceAccount,

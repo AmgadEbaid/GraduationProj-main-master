@@ -24,6 +24,8 @@ import { Message } from 'entities/Message';
 import { FirebaseModule } from './firebase/firebase.module';
 import { SearchHistory } from 'entities/SearchHistory';
 import { SearchHistoryModule } from './search-history/search-history.module';
+import { RepairModule } from './repair/repair.module';
+import { Repair } from 'entities/Repair';
 
 @Module({
   imports: [
@@ -64,6 +66,7 @@ import { SearchHistoryModule } from './search-history/search-history.module';
     MessageModule,
     FirebaseModule,
     SearchHistoryModule,
+    RepairModule,
   ],
   controllers: [AppController],
   providers: [

@@ -14,6 +14,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Request } from 'express';
 import { OrderStatus, paid_status, shippingStatus } from 'entities/Order';
+
 import { updateShipmentStatusDto } from './dto/update-shipment-status.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
@@ -132,6 +133,4 @@ export class OrderController {
   async findAvailableOrdersForDelivery() {
     return this.orderService.findAvailableOrdersForDelivery();
   }
-  
-   
 }
