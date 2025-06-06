@@ -79,15 +79,16 @@ export class ProductService {
       data: { products },
     };
   }
-  async myListings(userId: string) {
-    const products = await this.ProductRepository.find({
-      where: {
-        user: {
-          id: userId,
-        },
+  async myListings(userId: string, page = 1, limit = 20) {
+    const products = await this.ProductRepository.createQueryBuilder('product')
+      .where('product.user.id = :userId', { userId })
+      .andWhere('product.status = :status', {
         status: ProductStatus.AVAILABLE,
-      },
-    });
+      })
+      .orderBy('product.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
     if (!products.length) {
       return {
         status: 'success',
