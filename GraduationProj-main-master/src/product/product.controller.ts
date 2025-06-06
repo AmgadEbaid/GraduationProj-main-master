@@ -76,9 +76,13 @@ export class ProductController {
   }
   @UseGuards(JwtAuthGuard)
   @Get('availableProducts')
-  findAvailableProducts(@Req() req: Request) {
+  findAvailableProducts(
+    @Req() req: Request,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
     const user = req['user'] as any;
-    return this.productService.myListings(user.id);
+    return this.productService.myListings(user.id, page, limit);
   }
   @Get('getOne/:id')
   findOne(@Param('id') id: string) {
