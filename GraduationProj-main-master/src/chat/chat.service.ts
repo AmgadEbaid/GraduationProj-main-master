@@ -58,6 +58,12 @@ export class ChatService {
     createChatDto: CreateChatDto,
     returnMessages: boolean = false,
   ) {
+    if (senderId === createChatDto.recepientId) {
+      throw new HttpException(
+        'You cannot create a chat with yourself',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const chatName = `chats${senderId < createChatDto.recepientId ? senderId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + senderId}`;
     let chat = await this.chatRepository.findOne({
       where: {
