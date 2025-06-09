@@ -31,56 +31,27 @@ export class DeliveryService {
       );
     }
 
-    if (user.role === 'workshop') {
-      const deliveries = await this.Delivery.find({
-        where: { workshop: user },
-        relations: {
-          workshop: true,
-          delivery: true,
-          products: true,
-        },
-      });
+    const deliveries = await this.Delivery.find({
+      where: [{ workshop: user }, { delivery: user }],
+      relations: {
+        workshop: true,
+        delivery: true,
+        products: true,
+      },
+    });
 
-      if (deliveries.length < 1) {
-        throw new HttpException(
-          "you don't have any delivery requests yet",
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      return {
-        status: 'success',
-        message: 'your delivery requests have been returned successfully',
-        deliveries,
-      };
-    } else if (user.role === 'delivery') {
-      const deliveries = await this.Delivery.find({
-        where: { delivery: user },
-        relations: {
-          workshop: true,
-          delivery: true,
-          products: true,
-        },
-      });
-
-      if (deliveries.length < 1) {
-        throw new HttpException(
-          "you don't have any delivery requests yet",
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      return {
-        status: 'success',
-        message: 'your delivery requests have been returned successfully',
-        deliveries,
-      };
-    } else {
+    if (deliveries.length < 1) {
       throw new HttpException(
-        'Unauthorized role',
-        HttpStatus.UNAUTHORIZED
-      )
+        "you don't have any delivery requests yet",
+        HttpStatus.BAD_REQUEST,
+      );
     }
+
+    return {
+      status: 'success',
+      message: `your ${user.role} requests have been returned successfully`,
+      deliveries,
+    };
   }
 
   // make delivery request
