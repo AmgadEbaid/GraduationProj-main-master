@@ -15,9 +15,10 @@ export class RepairService {
 
   // get repair requests based on user role
   async getAllRepairs(userId: string) {
+
     const user = await this.User.findOne({ where: { id: userId } });
 
-    if (user.role === 'user') {
+    const getRepairs = async () => {
       const repairs = await this.Repair.find({
         where: {
           user: { id: userId },
@@ -43,34 +44,12 @@ export class RepairService {
       };
     }
 
-    if (user.role === 'workshop') {
-      const repairs = await this.Repair.find({
-        where: {
-          user: { id: userId },
-        },
-        relations: {
-          workshop: true,
-          user: true,
-          products: true,
-        },
-      });
-
-      if (repairs.length < 1) {
-        throw new HttpException(
-          'you don\'t have any repair rquests yet',
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      return {
-        status: 'success',
-        message: 'all repair requests has been returned successfully',
-        repairs,
-      };
+    if (['user', 'workshop'].includes(user.role)) {
+      return getRepairs();
     }
 
     throw new HttpException(
-      'there isn\'t repair repair requests',
+      'there aren\'t repair requests',
       HttpStatus.BAD_REQUEST,
     );
   }

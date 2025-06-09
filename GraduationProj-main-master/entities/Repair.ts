@@ -12,8 +12,8 @@ export enum RepairStatus {
 
 export enum PaymentStatus {
     Unpaid = 'unpaid',
-    Pending = 'pending',
-    Paid = 'paid'
+    Paid = 'paid',
+    Released = 'Released'
 }
 
 export enum PaymentMethod {

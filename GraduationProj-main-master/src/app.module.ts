@@ -27,6 +27,8 @@ import { SearchHistory } from 'entities/SearchHistory';
 import { SearchHistoryModule } from './search-history/search-history.module';
 import { RepairModule } from './repair/repair.module';
 import { Repair } from 'entities/Repair';
+import { DeliveryModule } from './delivery/delivery.module';
+import { Delivery } from 'entities/Delivery';
 
 @Module({
   imports: [
@@ -55,6 +57,7 @@ import { Repair } from 'entities/Repair';
         OrderProduct,
         SearchHistory,
         Repair,
+        Delivery,
       ],
     }),
     UserModule,
@@ -69,6 +72,7 @@ import { Repair } from 'entities/Repair';
     FirebaseModule,
     SearchHistoryModule,
     RepairModule,
+    DeliveryModule,
   ],
   controllers: [AppController],
   providers: [

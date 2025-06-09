@@ -12,6 +12,7 @@ import { Product } from './Product';
 import { Message } from './Message';
 import { SearchHistory } from './SearchHistory';
 import { Repair } from './Repair';
+import { Delivery } from './Delivery';
 // import { Message } from './Message';
 
 export enum Roles {
@@ -86,4 +87,6 @@ export class User {
   searchHistories: SearchHistory[];
   @OneToMany(() => Repair, (repair) => repair.user)
   repair: Repair[];
+  @OneToMany(() => Delivery, (delivery) => delivery.workshop)
+  deliveries: Delivery[];
 }
