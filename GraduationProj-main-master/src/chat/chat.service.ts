@@ -64,7 +64,7 @@ export class ChatService {
     if (returnMessages) {
       chat = await this.chatRepository.findOne({
         where: { id: chat.id },
-        relations: ['messages', 'participants'],
+        relations: ['messages', 'participants', 'messages.sender'],
       });
       return {
         status: 'success',
