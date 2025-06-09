@@ -62,10 +62,19 @@ export class ChatService {
       return false;
     }
     if (returnMessages) {
-      chat = await this.chatRepository.findOne({
-        where: { id: chat.id },
-        relations: ['messages', 'participants', 'messages.sender'],
-      });
+      chat = await this.chatRepository
+        .createQueryBuilder('chat')
+        .leftJoinAndSelect('chat.participants', 'participant')
+        .leftJoinAndSelect('chat.messages', 'message')
+        .leftJoin('message.sender', 'sender')
+        .addSelect([
+          'message.id',
+          'message.message',
+          'message.createdAt',
+          'sender.id',
+        ])
+        .where('chat.id = :id', { id: chat.id })
+        .getOne();
       return {
         status: 'success',
         message: 'Chat found successfully',
