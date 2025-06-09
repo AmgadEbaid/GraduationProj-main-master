@@ -4,11 +4,13 @@ import { UpdateChatDto } from './dto/update-chat.dto';
 import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Chat } from 'entities/Chat';
+import { User } from 'entities/User';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectRepository(Chat) private chatRepository: Repository<Chat>,
+    @InjectRepository(User) private userRepository: Repository<User>,
   ) {}
   async create(createChatDto: CreateChatDto, requesterId: string) {
     const chatName = `chats${requesterId < createChatDto.recepientId ? requesterId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + requesterId}`;
@@ -20,7 +22,7 @@ export class ChatService {
     if (existingChat) {
       throw new HttpException('Chat already exists', HttpStatus.FORBIDDEN);
     }
-    const existingParticipant = await this.chatRepository.findOne({
+    const existingParticipant = await this.userRepository.findOne({
       where: { id: createChatDto.recepientId },
     });
     if (!existingParticipant) {
