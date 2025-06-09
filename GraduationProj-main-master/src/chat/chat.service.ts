@@ -13,6 +13,12 @@ export class ChatService {
     @InjectRepository(User) private userRepository: Repository<User>,
   ) {}
   async create(createChatDto: CreateChatDto, requesterId: string) {
+    if (requesterId === createChatDto.recepientId) {
+      throw new HttpException(
+        'You cannot create a chat with yourself',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const chatName = `chats${requesterId < createChatDto.recepientId ? requesterId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + requesterId}`;
     const existingChat = await this.chatRepository.findOne({
       where: {
