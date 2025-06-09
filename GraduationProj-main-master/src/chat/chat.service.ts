@@ -20,7 +20,15 @@ export class ChatService {
     if (existingChat) {
       throw new HttpException('Chat already exists', HttpStatus.FORBIDDEN);
     }
-
+    const existingParticipant = await this.chatRepository.findOne({
+      where: { id: createChatDto.recepientId },
+    });
+    if (!existingParticipant) {
+      throw new HttpException(
+        'Recipient does not exist, make sure to pass correct recipient user',
+        HttpStatus.NOT_FOUND,
+      );
+    }
     const chat = this.chatRepository.create({
       participants: [{ id: requesterId }, { id: createChatDto.recepientId }],
       chatName,
