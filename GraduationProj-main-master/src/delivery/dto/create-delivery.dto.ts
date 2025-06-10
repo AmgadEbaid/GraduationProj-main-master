@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsString, MinLength } from "class-validator";
+import { ArrayMinSize, IsArray, IsNotEmpty, IsString, MinLength } from "class-validator";
 
 export class CreateDeliveryDto {
 
@@ -20,7 +20,7 @@ export class CreateDeliveryDto {
 
     @IsNotEmpty()
     @IsArray()
-    @MinLength(1, { each: true, message: 'please select your all products first' })
+    @ArrayMinSize(1, { message: 'please select at least one product' })
     products: string[]
 
 }

@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsNumber, MinLength } from "class-validator";
+import { ArrayMinSize, IsArray, IsNotEmpty, IsNumber } from "class-validator";
 
 export class CreateRepairDto {
 
@@ -8,9 +8,8 @@ export class CreateRepairDto {
 
     @IsNotEmpty()
     @IsArray()
-    @MinLength(1, {
-        each: true,
-        message: 'please select your all products first'
+    @ArrayMinSize(1, {
+        message: 'please select at least one product'
     })
     products: string[]
 
