@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Patch,
   Req,
   UploadedFile,
@@ -69,9 +70,13 @@ export class UserController {
     return this.userService.updateUserDetails(updateUserDetails, user.id, file);
   }
   @UseGuards(JwtAuthGuard)
-  @Get('getUserDetails')
-  async getUserDetails(@Req() req: Request) {
-    const user = req['user'] as any;
-    return this.userService.findOne(user.id);
+  @Get('getUserDetails/:id?')
+  async getUserDetails(@Req() req: Request, @Param('id') id: string) {
+    if (!id) {
+      const user = req['user'] as any;
+      return this.userService.findOne(user.id);
+    }
+    // If an ID is provided, fetch that user's details
+    return this.userService.findOne(id);
   }
 }
