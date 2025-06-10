@@ -26,7 +26,24 @@ export class ChatService {
       },
     });
     if (existingChat) {
-      throw new HttpException('Chat already exists', HttpStatus.FORBIDDEN);
+      const chat = await this.chatRepository
+        .createQueryBuilder('chat')
+        .leftJoinAndSelect('chat.participants', 'participant')
+        .leftJoinAndSelect('chat.messages', 'message')
+        .leftJoin('message.sender', 'sender')
+        .addSelect([
+          'message.id',
+          'message.message',
+          'message.createdAt',
+          'sender.id',
+        ])
+        .where('chat.id = :id', { id: existingChat.id })
+        .getOne();
+      return {
+        status: 'success',
+        message: 'Chat already exists',
+        data: { ...chat },
+      };
     }
     const existingParticipant = await this.userRepository.findOne({
       where: { id: createChatDto.recepientId },
