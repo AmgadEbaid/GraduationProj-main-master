@@ -234,6 +234,8 @@ export class ProductService {
       ]),
     );
     const products = await this.ProductRepository.createQueryBuilder('product')
+      .leftJoin('product.user', 'user') // join the user relation
+      .addSelect(['user.id']) // select only the user id
       .where(whereConditions, parameters)
       .skip((page - 1) * limit)
       .take(limit)
@@ -274,6 +276,7 @@ export class ProductService {
     const fiveDaysAgo = new Date();
     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
 
+    //First, check if the user has any search history
     const searchHistories = await this.SearchHistoryRepository.find({
       where: { user: { id: userId } },
       order: { searchedAt: 'DESC' },
@@ -281,13 +284,17 @@ export class ProductService {
     });
 
     let products = [];
+    // If the user has no search history, fetch random products
     if (searchHistories.length === 0) {
       products = await this.ProductRepository.createQueryBuilder('product')
+        .leftJoin('product.user', 'user') // join the user relation
+        .addSelect(['user.id']) // select only the user id
         .orderBy('RAND()')
         .skip((page - 1) * limit)
         .take(limit)
         .getMany();
     } else {
+      // If the user has search history, fetch products based on keywords
       const keywords = [
         ...new Set(searchHistories.map((history) => history.keyword)),
       ];
