@@ -37,7 +37,7 @@ export class Repair {
     status: RepairStatus;
 
     @Column({ nullable: false })
-    cost: string
+    cost: number;
 
     @Column({
         type: 'enum',

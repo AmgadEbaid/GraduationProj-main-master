@@ -12,6 +12,7 @@ import {
 import { RepairService } from './repair.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RepairStatus } from 'entities/Repair';
+import { CreateRepairDto } from './dto/create-repair.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('repair')
@@ -27,15 +28,13 @@ export class RepairController {
 
   @Post(':id')
   async makeRepairReq(
-    @Body('products') products: string[],
-    @Body('cost') cost: string,
+    @Body() body: CreateRepairDto,
     @Param('id') workshopId: string,
     @Req() req: Request,
   ) {
     const userId = req['user'].id;
     const repair = await this.repairService.makeRepairReq(
-      products,
-      cost,
+      body,
       userId,
       workshopId,
     );

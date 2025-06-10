@@ -24,13 +24,6 @@ export class DeliveryService {
   async getDeliveryReqs(userId: string) {
     const user = await this.User.findOne({ where: { id: userId } });
 
-    if (!['workshop', 'delivery'].includes(user.role)) {
-      throw new HttpException(
-        "you don't have any delivery requests",
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const deliveries = await this.Delivery.find({
       where: [{ workshop: user }, { delivery: user }],
       relations: {
@@ -42,7 +35,7 @@ export class DeliveryService {
 
     if (deliveries.length < 1) {
       throw new HttpException(
-        "you don't have any delivery requests yet",
+        "you don't have any delivery requests",
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -61,13 +54,6 @@ export class DeliveryService {
     userId: string,
   ) {
     const { title, recipientName, recipientPhone, address, products } = body;
-
-    if (!products || products.length < 1) {
-      throw new HttpException(
-        'please select your products first',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const delivery = await this.User.findOne({ where: { id: deliveryId } });
 

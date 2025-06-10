@@ -4,6 +4,7 @@ import { Product, ProductStatus } from 'entities/Product';
 import { Repair, RepairStatus } from 'entities/Repair';
 import { Roles, User } from 'entities/User';
 import { Repository } from 'typeorm';
+import { CreateRepairDto } from './dto/create-repair.dto';
 
 @Injectable()
 export class RepairService {
@@ -15,70 +16,44 @@ export class RepairService {
 
   // get repair requests based on user role
   async getAllRepairs(userId: string) {
-
     const user = await this.User.findOne({ where: { id: userId } });
 
-    const getRepairs = async () => {
-      const repairs = await this.Repair.find({
-        where: {
-          user: { id: userId },
-        },
-        relations: {
-          user: true,
-          workshop: true,
-          products: true,
-        },
-      });
+    const repairs = await this.Repair.find({
+      where: [{ workshop: user }, { user: user }],
+      relations: { user: true, workshop: true, products: true },
+    });
 
-      if (repairs.length < 1) {
-        throw new HttpException(
-          'you don\'t have any repair rquests yet',
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      return {
-        status: 'success',
-        message: 'all repair requests has been returned successfully',
-        repairs,
-      };
+    if (repairs.length < 1) {
+      throw new HttpException(
+        "you don't have any repair rquests yet",
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    if (['user', 'workshop'].includes(user.role)) {
-      return getRepairs();
-    }
-
-    throw new HttpException(
-      'there aren\'t repair requests',
-      HttpStatus.BAD_REQUEST,
-    );
+    return {
+      status: 'success',
+      message: 'all repair requests has been returned successfully',
+      repairs,
+    };
   }
 
   // create repair request based on user and workshop on products
   async makeRepairReq(
-    products: string[],
-    cost: string,
+    body: CreateRepairDto,
     userId: string,
     workshopId: string,
   ) {
-    if (!products || products.length < 1) {
-      throw new HttpException(
-        'please select your all products first',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    const { cost, products } = body;
 
-    if (!cost) {
+    if (userId === workshopId)
       throw new HttpException(
-        "the repair cost isn't define",
+        "you can't make that repair request",
         HttpStatus.BAD_REQUEST,
       );
-    }
 
     const productsArray: Product[] = [];
     for (const productId of products) {
       const product = await this.Product.findOne({ where: { id: productId } });
-
       if (!product) {
         throw new HttpException(
           "one/all of these products aren't exist",
