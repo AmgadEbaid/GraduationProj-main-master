@@ -41,19 +41,7 @@ export class OrderController {
   }
 
   // remove product from the cart of the order
-  @Delete('delete/:orderId/:productId')
-  remove(
-    @Req() req: Request,
-    @Param('orderId') orderId: string,
-    @Param('productId') productId: string,
-  ) {
-    const user = req['user'] as any;
-    return this.orderService.removeProductFromOrder(
-      productId,
-      orderId,
-      user.id,
-    );
-  }
+  
   // Delete the whole order
   @Delete('delete/:id')
   removeOrder(@Param('id') id: string, @Req() req: Request) {
@@ -77,7 +65,6 @@ export class OrderController {
 
     return {
       status: 'success',
-      message: `Order ${status.toLowerCase()} successfully`,
       data: updatedOrder,
     };
   }

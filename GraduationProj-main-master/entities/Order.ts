@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -137,10 +138,12 @@ export class Order {
   deliveredAt: Date;
   @Column({ type: 'timestamp', nullable: true })
   confirmedAt: Date; // When the order was confirmed by the seller
-  @ManyToOne(() => Product, { nullable: true })
+  @OneToOne(() => Product, { nullable: true })
+  @JoinColumn()
   offeredProduct?: Product;
   @ManyToOne(() => User, (user) => user.orders)
   user: User;
-  @OneToMany(() => Product, (product) => product.order)
-  products: Product[]; // Assuming an order can have multiple products
+  @OneToOne(() => Product)
+  @JoinColumn()
+  products: Product; // Assuming an order can have multiple products
 }
