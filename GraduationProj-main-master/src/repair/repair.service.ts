@@ -28,7 +28,6 @@ export class RepairService {
         relations: {
           user: true,
           workshop: true,
-          products: true,
         },
       });
 
@@ -54,7 +53,6 @@ export class RepairService {
         relations: {
           workshop: true,
           user: true,
-          products: true,
         },
       });
 
