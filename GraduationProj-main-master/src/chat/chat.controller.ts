@@ -32,7 +32,7 @@ export class ChatController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('find-one')
+  @Post('find-one')
   findOne(@Req() req: Request, @Body() createChatDto: CreateChatDto) {
     const user = req['user'] as any;
     return this.chatService.findOne(user.id, createChatDto, true);

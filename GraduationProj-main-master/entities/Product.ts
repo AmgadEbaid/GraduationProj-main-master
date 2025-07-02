@@ -4,6 +4,7 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   JoinColumn,
 } from 'typeorm';
@@ -13,6 +14,7 @@ import { User } from './User';
 import { OrderProduct } from './OrderProduct';
 import { Delivery } from './Delivery';
 
+import { Repair } from './Repair';
 export enum ProductType {
   BUY = 'buy',
   REPAIR = 'repair',
@@ -102,17 +104,13 @@ export class Product {
 
   @ManyToOne(() => User, (user) => user.products, { eager: false })
   user: User;
-  @ManyToOne(() => Order, (order) => order.products)
-  order: Order;
+  
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
 
   @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
   orderItems: OrderProduct[];
-  // @ManyToOne(() => Repair, (repair) => repair.products)
-  // @JoinColumn({ name: 'repairId' })
-  // repair: Repair;
-  // @ManyToOne(() => Delivery, (delivery) => delivery.products)
-  // @JoinColumn({ name: 'deliveryId' })
-  // delivery: Delivery;
+  @ManyToOne(() => Repair, (repair) => repair.products)
+  @JoinColumn({ name: 'repairId' })
+  repair: Repair;
 }

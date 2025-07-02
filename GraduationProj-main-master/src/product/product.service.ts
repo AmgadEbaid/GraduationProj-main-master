@@ -2,21 +2,25 @@ import {
   ForbiddenException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product, ProductStatus, ProductType } from 'entities/Product';
-import { Not, Repository } from 'typeorm';
+import { MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { SearchHistoryService } from 'src/search-history/search-history.service';
 import axios from 'axios';
+import { SearchHistory } from 'entities/SearchHistory';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly ProductRepository: Repository<Product>,
+    @InjectRepository(SearchHistory)
+    private readonly SearchHistoryRepository: Repository<SearchHistory>,
     private readonly searchHistoryService: SearchHistoryService,
   ) {}
   private readonly apiUrl = 'https://api.mymemory.translated.net/get';
@@ -75,15 +79,16 @@ export class ProductService {
       data: { products },
     };
   }
-  async myListings(userId: string) {
-    const products = await this.ProductRepository.find({
-      where: {
-        user: {
-          id: userId,
-        },
+  async myListings(userId: string, page = 1, limit = 20) {
+    const products = await this.ProductRepository.createQueryBuilder('product')
+      .where('product.user.id = :userId', { userId })
+      .andWhere('product.status = :status', {
         status: ProductStatus.AVAILABLE,
-      },
-    });
+      })
+      .orderBy('product.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
     if (!products.length) {
       return {
         status: 'success',
@@ -171,9 +176,20 @@ export class ProductService {
     };
   }
 
-  async searchProducts(query: string, page = 1, limit = 20, userId: string) {
+  async searchProducts(
+    query: string,
+    page = 1,
+    limit = 20,
+    userId?: string,
+    saveSearchHistory = true,
+  ) {
+    if (!query || query.trim() === '') {
+      throw new HttpException(
+        'Search query cannot be empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     const keywords = query.trim().split(/\s+/);
-
     const translatedKeywords = await Promise.all(
       keywords.map(async (word) => {
         const language = this.detectLanguage(word);
@@ -192,8 +208,6 @@ export class ProductService {
         }
       }),
     );
-    console.log('Translated Keywords:', translatedKeywords);
-
     const whereConditions = translatedKeywords
       .map((kw, i) => {
         const conditions = [];
@@ -213,22 +227,23 @@ export class ProductService {
         return `(${conditions.join(' OR ')})`;
       })
       .join(' AND ');
-
-    console.log('Where Conditions:', whereConditions);
     const parameters = Object.fromEntries(
       translatedKeywords.flatMap((kw, i) => [
         [`original${i}`, `%${kw.original}%`],
         [`translated${i}`, `%${kw.translated}%`],
       ]),
     );
-    console.log('Parameters:', parameters);
     const products = await this.ProductRepository.createQueryBuilder('product')
+      .leftJoin('product.user', 'user') // join the user relation
+      .addSelect(['user.id']) // select only the user id
       .where(whereConditions, parameters)
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();
 
-    await this.searchHistoryService.saveSearchHistory(keywords, userId);
+    if (userId && saveSearchHistory) {
+      await this.searchHistoryService.saveSearchHistory(keywords, userId);
+    }
     return {
       status: 'success',
       message: 'Products fetched successfully',
@@ -256,6 +271,57 @@ export class ProductService {
     }
     await this.ProductRepository.delete(id);
     return;
+  }
+  async homePageProducts(userId: string, page = 1, limit = 20) {
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+    //First, check if the user has any search history
+    const searchHistories = await this.SearchHistoryRepository.find({
+      where: { user: { id: userId } },
+      order: { searchedAt: 'DESC' },
+      take: 5,
+    });
+
+    let products = [];
+    // If the user has no search history, fetch random products
+    if (searchHistories.length === 0) {
+      products = await this.ProductRepository.createQueryBuilder('product')
+        .leftJoin('product.user', 'user') // join the user relation
+        .addSelect(['user.id']) // select only the user id
+        .where('product.status = :status', {
+          status: ProductStatus.AVAILABLE,
+        })
+        .orderBy('RAND()')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany();
+    } else {
+      // If the user has search history, fetch products based on keywords
+      const keywords = [
+        ...new Set(searchHistories.map((history) => history.keyword)),
+      ];
+
+      const productResults = await Promise.all(
+        keywords.map(async (word) => {
+          const product = await this.searchProducts(
+            word,
+            page,
+            Math.floor(limit / keywords.length),
+            userId,
+            false,
+          );
+          return product.data.products;
+        }),
+      );
+      products = productResults.flat();
+    }
+
+    return {
+      status: 'success',
+      message: 'Products fetched successfully',
+      data: { products },
+    };
   }
   private async translateText(
     text: string,

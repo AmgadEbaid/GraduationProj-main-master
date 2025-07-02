@@ -6,18 +6,18 @@ import {
   IsNumber,
   Min,
   ValidateIf,
-  IsArray,
-  ArrayNotEmpty,
+
 } from 'class-validator';
 import { orderType, paymentMethod } from 'entities/Order';
 
 export class CreateOrderDto {
   @IsNotEmpty()
   name: string;
-  @IsArray()
-  @ArrayNotEmpty()
   @IsUUID('all', { each: true })
-  targetProductId: string[];
+
+  @IsNotEmpty()
+  @IsUUID()
+  targetProductId: string;
 
   @ValidateIf(
     (o) =>
@@ -26,8 +26,7 @@ export class CreateOrderDto {
   @IsUUID()
   offeredProductId?: string;
 
-  @IsEnum(orderType)
-  type: orderType;
+
 
   @IsEnum(paymentMethod)
   paymentMethod: paymentMethod;

@@ -22,13 +22,13 @@ import { ChatModule } from './chat/chat.module';
 import { Chat } from 'entities/Chat';
 import { Message } from 'entities/Message';
 import { FirebaseModule } from './firebase/firebase.module';
-import { OrderProduct } from 'entities/OrderProduct';
 import { SearchHistory } from 'entities/SearchHistory';
 import { SearchHistoryModule } from './search-history/search-history.module';
 import { RepairModule } from './repair/repair.module';
 import { Repair } from 'entities/Repair';
 import { DeliveryModule } from './delivery/delivery.module';
 import { Delivery } from 'entities/Delivery';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -54,8 +54,8 @@ import { Delivery } from 'entities/Delivery';
         Review,
         Message,
         Chat,
-        OrderProduct,
         SearchHistory,
+        Review,
         Repair,
         Delivery,
       ],
@@ -73,6 +73,7 @@ import { Delivery } from 'entities/Delivery';
     SearchHistoryModule,
     RepairModule,
     DeliveryModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

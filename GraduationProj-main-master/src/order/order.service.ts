@@ -8,7 +8,13 @@ import {
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order, OrderStatus, orderType, paid_status, shippingStatus } from 'entities/Order';
+import {
+  Order,
+  OrderStatus,
+  orderType,
+  paid_status,
+  shippingStatus,
+} from 'entities/Order';
 import { Not, Repository } from 'typeorm';
 import { Product, ProductStatus } from 'entities/Product';
 import { Roles, User } from 'entities/User';
@@ -20,26 +26,24 @@ export class OrderService {
   @InjectRepository(User) private User: Repository<User>;
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
-    let products: Product[] = [];
     let price: number = 0;
+
     let name: string = '';
     let offeredProduct: Product | null = null;
-    for (const productId of createOrderDto.targetProductId) {
-      const product = await this.Product.findOne({
-        where: { id: productId, status: ProductStatus.AVAILABLE },
-      });
-      if (!product) {
-        throw new HttpException(
-          `Product with id ${productId} not found, or this product not available`,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      products.push(product);
-      price += product.price;
-
-      name = product.name + ' ' + name;
+    const product = await this.Product.findOne({
+      where: {
+        id: createOrderDto.targetProductId,
+        status: ProductStatus.AVAILABLE,
+      },
+      relations: ['user'],
+    });
+    if (!product) {
+      throw new HttpException(
+        `Product with id ${createOrderDto.targetProductId} not found or not available`,
+        HttpStatus.NOT_FOUND,
+      );
     }
+    price = product.price;
 
     if (createOrderDto.offeredProductId) {
       offeredProduct = await this.Product.findOne({
@@ -56,19 +60,39 @@ export class OrderService {
           HttpStatus.NOT_FOUND,
         );
       }
-      for (const productId of createOrderDto.targetProductId) {
-        if (offeredProduct.id === productId) {
-          throw new HttpException(
-            `You cannot offer and target the same product`,
-            HttpStatus.BAD_REQUEST,
-          );
-        }
+
+      if (offeredProduct.id === product.id) {
+        throw new HttpException(
+          `You cannot offer and target the same product`,
+          HttpStatus.BAD_REQUEST,
+        );
       }
-      if (createOrderDto.type === 'exchange_plus_cash') {
-        price = createOrderDto.cashAmount;
-      } else if (createOrderDto.type === 'exchange') {
-        price = 0;
-      }
+    }
+    let ordertype: orderType;
+    if (!offeredProduct) ordertype = orderType.purchase;
+    else if (createOrderDto.cashAmount && offeredProduct)
+      ordertype = orderType.exchange_plus_cash;
+    else ordertype = orderType.exchange;
+
+    if (ordertype !== orderType.exchange_plus_cash)
+      createOrderDto.cashAmount = 0;
+
+    if (product.user.id === offeredProduct?.user.id) {
+      throw new HttpException(
+        `You cannot order your own product`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (product.user.id === userId) {
+      throw new HttpException(
+        `You cannot order your own product`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (ordertype === 'exchange_plus_cash') {
+      price = createOrderDto.cashAmount;
+    } else if (ordertype === 'exchange') {
+      price = 0;
     }
 
     let discount = 0;
@@ -107,10 +131,10 @@ export class OrderService {
     console.log('usedPoints', usedPoints);
 
     const order = this.Order.create({
-      products,
+      products: product,
       price,
       user: { id: userId },
-      type: createOrderDto.type,
+      type: ordertype,
       paymentMethod: createOrderDto.paymentMethod,
       cashAmount: createOrderDto.cashAmount,
       offeredProduct: offeredProduct,
@@ -118,19 +142,21 @@ export class OrderService {
       newPoints: newPoints,
     });
 
-    for (const product of products) {
-      await this.Product.update(
-        { id: product.id },
-        { status: ProductStatus.ON_HOLD },
-      );
-    }
+    // Save the order first to get its ID
+    await this.Order.save(order);
+
+    // Now update the product to set both status and order
+    await this.Product.update(
+      { id: product.id },
+      { status: ProductStatus.ON_HOLD },
+    );
+
     if (offeredProduct) {
       await this.Product.update(
         { id: offeredProduct.id },
         { status: ProductStatus.ON_HOLD },
       );
     }
-    await this.Order.save(order);
     return {
       status: 'success',
       message: 'Order created successfully',
@@ -170,33 +196,14 @@ export class OrderService {
       data: order,
     };
   }
-  async removeProductFromOrder(
-    productId: string,
-    orderId: string,
-    userId: string,
-  ) {
-    const { order } = await this.checkId(orderId, userId);
-    const product = await this.Product.findOne({ where: { id: productId } });
-    if (!product || !order.products.find((p) => p.id === productId)) {
-      throw new HttpException(
-        'either product not found or the product is not inside the order',
-        HttpStatus.NOT_FOUND,
-      );
-    }
 
-    order.price = order.price - product.price;
-    order.products = order.products.filter((p) => p.id !== productId);
-    await this.Order.save(order);
-    return {
-      status: 'success',
-      message: 'Product removed from order successfully',
-      data: order,
-    };
-  }
   async delete(id: string, userId: string) {
     const { order } = await this.checkId(id, userId);
-    await this.Product.update({ order: { id: order.id } }, { order: null });
     await this.Order.remove(order);
+    await this.Product.update(
+      { id: order.products.id },
+      { status: ProductStatus.AVAILABLE },
+    );
     return;
   }
   private async checkId(orderId: string, userId: string) {
@@ -229,7 +236,7 @@ export class OrderService {
     // Get both the seller and the order's customer
     const seller = await this.User.findOne({ where: { id: userId } });
     const customer = await this.User.findOne({ where: { id: order.user.id } });
-    
+
     if (!seller) {
       throw new NotFoundException('Seller not found');
     }
@@ -238,9 +245,7 @@ export class OrderService {
     }
 
     // Check if the user is the seller of all products in the order
-    const ownsAllProducts = order.products.every(
-      (product) => product.user.id === userId,
-    );
+    const ownsAllProducts = order.products.user.id === seller.id;
 
     if (!ownsAllProducts) {
       throw new ForbiddenException(
@@ -263,13 +268,15 @@ export class OrderService {
       let errorMessage = '';
       switch (order.status) {
         case OrderStatus.PENDING:
-          errorMessage = 'Order can only be Confirmed or Rejected from Pending status';
+          errorMessage =
+            'Order can only be Confirmed or Rejected from Pending status';
           break;
         case OrderStatus.CONFIRMED:
           errorMessage = 'Confirmed order must be moved to Processing status';
           break;
         case OrderStatus.PROCESSING:
-          errorMessage = 'Processing order must be moved to Awaiting Shipment status when ready for pickup';
+          errorMessage =
+            'Processing order must be moved to Awaiting Shipment status when ready for pickup';
           break;
         case OrderStatus.AWAITING_SHIPMENT:
           errorMessage = 'You can move the order back to Confirmed if needed';
@@ -292,7 +299,7 @@ export class OrderService {
         order.shippingStatus = shippingStatus.AWAITING_FULFILLMENT;
         break;
     }
-
+    console.log('status', status);
     order.status = status;
 
     if (status === OrderStatus.REJECTED) {
@@ -300,12 +307,10 @@ export class OrderService {
       customer.points += order.usedPoints;
       await this.User.save(customer);
 
-      for (const product of order.products) {
-        await this.Product.update(
-          { id: product.id },
-          { status: ProductStatus.AVAILABLE },
-        );
-      }
+      await this.Product.update(
+        { id: order.products.id },
+        { status: ProductStatus.AVAILABLE },
+      );
 
       if (order.offeredProduct) {
         await this.Product.update(
@@ -326,14 +331,13 @@ export class OrderService {
   }
 
   async delverymanAcceptOrder(orderId: string, deliveryman: User) {
-
     deliveryman = await this.User.findOne({
-      where: { id: deliveryman.id , role: Roles.Delivery },
+      where: { id: deliveryman.id, role: Roles.Delivery },
     });
     if (!deliveryman) {
       throw new NotFoundException('Deliveryman not found');
     }
-    
+
     const order = await this.Order.findOne({
       where: { id: orderId, deliveryman: null },
       relations: ['products', 'user'],
@@ -355,7 +359,6 @@ export class OrderService {
     return {
       data: order,
     };
-
   }
 
   async updateDeliveryStatus(
@@ -410,9 +413,15 @@ export class OrderService {
         [shippingStatus.DISPATCHED_FOR_PICKUP]: [shippingStatus.PICKED_UP],
         [shippingStatus.PICKED_UP]: [shippingStatus.LEFT_CARRIER_LOCATION],
         [shippingStatus.LEFT_CARRIER_LOCATION]: [shippingStatus.IN_TRANSIT],
-        [shippingStatus.IN_TRANSIT]: [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY],
-        [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [shippingStatus.OUT_FOR_DELIVERY],
-        [shippingStatus.OUT_FOR_DELIVERY]: [shippingStatus.AVAILABLE_FOR_PICKUP],
+        [shippingStatus.IN_TRANSIT]: [
+          shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY,
+        ],
+        [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [
+          shippingStatus.OUT_FOR_DELIVERY,
+        ],
+        [shippingStatus.OUT_FOR_DELIVERY]: [
+          shippingStatus.AVAILABLE_FOR_PICKUP,
+        ],
         [shippingStatus.AVAILABLE_FOR_PICKUP]: [shippingStatus.DELIVERED],
       };
 
@@ -423,18 +432,33 @@ export class OrderService {
       }
     }
     // Handle flow for exchange orders
-    else if (order.type === orderType.exchange || order.type === orderType.exchange_plus_cash) {
+    else if (
+      order.type === orderType.exchange ||
+      order.type === orderType.exchange_plus_cash
+    ) {
       const exchangeFlow = {
-        [shippingStatus.AVAILABLE_FOR_PICKUP]: [shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP],
-        [shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP]: [shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER],
-        [shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER]: [shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY],
-        [shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY]: [shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER],
-        [shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER]: [shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED],
+        [shippingStatus.AVAILABLE_FOR_PICKUP]: [
+          shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP,
+        ],
+        [shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP]: [
+          shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER,
+        ],
+        [shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER]: [
+          shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY,
+        ],
+        [shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY]: [
+          shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER,
+        ],
+        [shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER]: [
+          shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED,
+        ],
       };
 
       // For exchange orders, use the exchange flow after AVAILABLE_FOR_PICKUP
-      if (order.shippingStatus === shippingStatus.AVAILABLE_FOR_PICKUP || 
-          Object.keys(exchangeFlow).includes(order.shippingStatus)) {
+      if (
+        order.shippingStatus === shippingStatus.AVAILABLE_FOR_PICKUP ||
+        Object.keys(exchangeFlow).includes(order.shippingStatus)
+      ) {
         if (!exchangeFlow[order.shippingStatus]?.includes(newShippingStatus)) {
           throw new BadRequestException(
             `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus} for exchange order`,
@@ -446,9 +470,15 @@ export class OrderService {
           [shippingStatus.DISPATCHED_FOR_PICKUP]: [shippingStatus.PICKED_UP],
           [shippingStatus.PICKED_UP]: [shippingStatus.LEFT_CARRIER_LOCATION],
           [shippingStatus.LEFT_CARRIER_LOCATION]: [shippingStatus.IN_TRANSIT],
-          [shippingStatus.IN_TRANSIT]: [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY],
-          [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [shippingStatus.OUT_FOR_DELIVERY],
-          [shippingStatus.OUT_FOR_DELIVERY]: [shippingStatus.AVAILABLE_FOR_PICKUP],
+          [shippingStatus.IN_TRANSIT]: [
+            shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY,
+          ],
+          [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [
+            shippingStatus.OUT_FOR_DELIVERY,
+          ],
+          [shippingStatus.OUT_FOR_DELIVERY]: [
+            shippingStatus.AVAILABLE_FOR_PICKUP,
+          ],
         };
 
         if (!initialFlow[order.shippingStatus]?.includes(newShippingStatus)) {
@@ -463,8 +493,11 @@ export class OrderService {
     order.shippingStatus = newShippingStatus;
 
     // Update order status and timestamp for final states
-    if (newShippingStatus === shippingStatus.DELIVERED || 
-        newShippingStatus === shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED) {
+    if (
+      newShippingStatus === shippingStatus.DELIVERED ||
+      newShippingStatus ===
+        shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED
+    ) {
       order.status = OrderStatus.COMPLETED;
       order.deliveredAt = new Date();
     }
@@ -532,14 +565,14 @@ export class OrderService {
       status: {
         orderStatus: order.status,
         shippingStatus: order.shippingStatus,
-        paidStatus: order.paidStatus
+        paidStatus: order.paidStatus,
       },
       timestamps: {
         createdAt: order.createdAt,
         confirmedAt: order.confirmedAt,
         shippedAt: order.shippedAt,
         deliveredAt: order.deliveredAt,
-        cancelledAt: order.cancelledAt
+        cancelledAt: order.cancelledAt,
       },
       customerInfo: {
         id: order.user.id,
@@ -548,7 +581,7 @@ export class OrderService {
         email: order.user.email,
         phone: order.user.phone,
         image: order.user.image,
-        addresses: order.user.addresses.map(addr => ({
+        addresses: order.user.addresses.map((addr) => ({
           id: addr.id,
           fullName: addr.fullName,
           streetAddress: addr.streetAddress,
@@ -556,90 +589,77 @@ export class OrderService {
           state: addr.state,
           country: addr.country,
           postalCode: addr.postalCode,
-          phoneNumber: addr.phoneNumber
-        }))
+          phoneNumber: addr.phoneNumber,
+        })),
       },
-      deliveryInfo: order.deliveryman ? {
-        id: order.deliveryman.id,
-        firstName: order.deliveryman.firstName,
-        lastName: order.deliveryman.lastName,
-        phone: order.deliveryman.phone,
-        image: order.deliveryman.image
-      } : null,
-      products: order.products.map(product => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        category: product.category,
-        condition: product.condition,
-        type: product.type,
-        status: product.status,
-        location: product.location,
-        imageUrl: product.imageUrl,
-        createdAt: product.createdAt
-      })),
-      offeredProduct: order.offeredProduct ? {
-        id: order.offeredProduct.id,
-        name: order.offeredProduct.name,
-        description: order.offeredProduct.description,
-        price: order.offeredProduct.price,
-        condition: order.offeredProduct.condition,
-        type: order.offeredProduct.type,
-        status: order.offeredProduct.status,
-        location: order.offeredProduct.location,
-        imageUrl: order.offeredProduct.imageUrl,
-        createdAt: order.offeredProduct.createdAt
-      } : null,
+      deliveryInfo: order.deliveryman
+        ? {
+            id: order.deliveryman.id,
+            firstName: order.deliveryman.firstName,
+            lastName: order.deliveryman.lastName,
+            phone: order.deliveryman.phone,
+            image: order.deliveryman.image,
+          }
+        : null,
+      products: order.products,
+      offeredProduct: order.offeredProduct
+        ? {
+            id: order.offeredProduct.id,
+            name: order.offeredProduct.name,
+            description: order.offeredProduct.description,
+            price: order.offeredProduct.price,
+            condition: order.offeredProduct.condition,
+            type: order.offeredProduct.type,
+            status: order.offeredProduct.status,
+            location: order.offeredProduct.location,
+            imageUrl: order.offeredProduct.imageUrl,
+            createdAt: order.offeredProduct.createdAt,
+          }
+        : null,
       pricing: {
         totalPrice: order.price,
         usedPoints: order.usedPoints,
         newPoints: order.newPoints,
-        cashAmount: order.cashAmount
+        cashAmount: order.cashAmount,
       },
-      paymentMethod: order.paymentMethod
+      paymentMethod: order.paymentMethod,
     };
 
     return {
       status: 'success',
       message: 'Order details fetched successfully',
-      data: orderDetails
+      data: orderDetails,
     };
   }
 
   async getUserOrders(userId: string) {
     const orders = await this.Order.find({
       where: { user: { id: userId } },
-      relations: [
-        'products',
-        'user'
-      ],
+      relations: ['products', 'user'],
       order: {
-        createdAt: 'DESC'
-      }
+        createdAt: 'DESC',
+      },
     });
 
     if (!orders.length) {
       return {
         status: 'success',
         message: 'No orders found',
-        data: []
+        data: [],
       };
     }
 
-    const orderOverviews = orders.map(order => ({
+    const orderOverviews = orders.map((order) => ({
       orderId: order.id,
       totalPrice: order.price,
       status: order.status,
-      products: order.products.map(product => ({
-        name: product.name
-      }))
+      products: order.products.name,
     }));
 
     return {
       status: 'success',
       message: 'Orders fetched successfully',
-      data: orderOverviews
+      data: orderOverviews,
     };
   }
 
@@ -647,54 +667,46 @@ export class OrderService {
     const orders = await this.Order.find({
       where: {
         products: {
-          user: { id: sellerId }
-        }
+          user: { id: sellerId },
+        },
       },
-      relations: [
-        'products',
-        'products.user',
-        'user'
-      ],
+      relations: ['products', 'products.user', 'user'],
       order: {
-        createdAt: 'DESC'
-      }
+        createdAt: 'DESC',
+      },
     });
 
     if (!orders.length) {
       return {
         status: 'success',
         message: 'No orders found',
-        data: []
+        data: [],
       };
     }
 
-    const orderOverviews = orders.map(order => ({
+    const orderOverviews = orders.map((order) => ({
       orderId: order.id,
       customerName: `${order.user.firstName} ${order.user.lastName}`,
       totalPrice: order.price,
       status: order.status,
-      products: order.products
-        .filter(p => p.user.id === sellerId)
-        .map(product => ({
-          name: product.name
-        }))
+      products: order.products.name,
     }));
 
     return {
       status: 'success',
       message: 'Received orders fetched successfully',
-      data: orderOverviews
+      data: orderOverviews,
     };
   }
 
   async updateOrderPaymentStatus(
     orderId: string,
     userId: string,
-    newPaidStatus: paid_status
+    newPaidStatus: paid_status,
   ) {
     const order = await this.Order.findOne({
       where: { id: orderId },
-      relations: ['user', 'products', 'products.user']
+      relations: ['user', 'products', 'products.user'],
     });
 
     if (!order) {
@@ -702,13 +714,11 @@ export class OrderService {
     }
 
     // Check if the user is the seller of any product in the order
-    const isSeller = order.products.some(
-      product => product.user.id === userId
-    );
+    const isSeller = order.products.user.id === userId;
 
     if (!isSeller) {
       throw new ForbiddenException(
-        'You are not authorized to update payment status for this order'
+        'You are not authorized to update payment status for this order',
       );
     }
 
@@ -722,10 +732,8 @@ export class OrderService {
       message: `Order payment status updated to ${newPaidStatus}`,
       data: {
         orderId: order.id,
-        paidStatus: order.paidStatus
-      }
+        paidStatus: order.paidStatus,
+      },
     };
   }
-
-
 }

@@ -1,13 +1,14 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Product } from './Product';
 import { User } from './User';
-import { OrderProduct } from './OrderProduct';
 
 export enum orderType {
   purchase = 'purchase',
@@ -85,10 +86,7 @@ export class Order {
 
   @Column({ type: 'float', nullable: false })
   price: number;
-  @OneToMany(() => Product, (product) => product.order)
-  products: Product[];
-  @ManyToOne(() => User, (user) => user.orders)
-  user: User;
+
   @Column({
     type: 'enum',
     enum: orderType,
@@ -140,11 +138,12 @@ export class Order {
   deliveredAt: Date;
   @Column({ type: 'timestamp', nullable: true })
   confirmedAt: Date; // When the order was confirmed by the seller
-  @ManyToOne(() => Product, { nullable: true })
+  @OneToOne(() => Product, { nullable: true })
+  @JoinColumn()
   offeredProduct?: Product;
-
-  @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.order, {
-    eager: true,
-  })
-  orderItems: OrderProduct[];
+  @ManyToOne(() => User, (user) => user.orders)
+  user: User;
+  @OneToOne(() => Product)
+  @JoinColumn()
+  products: Product; // Assuming an order can have multiple products
 }

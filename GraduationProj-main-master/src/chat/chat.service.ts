@@ -4,13 +4,21 @@ import { UpdateChatDto } from './dto/update-chat.dto';
 import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Chat } from 'entities/Chat';
+import { User } from 'entities/User';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectRepository(Chat) private chatRepository: Repository<Chat>,
+    @InjectRepository(User) private userRepository: Repository<User>,
   ) {}
   async create(createChatDto: CreateChatDto, requesterId: string) {
+    if (requesterId === createChatDto.recepientId) {
+      throw new HttpException(
+        'You cannot create a chat with yourself',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const chatName = `chats${requesterId < createChatDto.recepientId ? requesterId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + requesterId}`;
     const existingChat = await this.chatRepository.findOne({
       where: {
@@ -18,9 +26,34 @@ export class ChatService {
       },
     });
     if (existingChat) {
-      throw new HttpException('Chat already exists', HttpStatus.FORBIDDEN);
+      const chat = await this.chatRepository
+        .createQueryBuilder('chat')
+        .leftJoinAndSelect('chat.participants', 'participant')
+        .leftJoinAndSelect('chat.messages', 'message')
+        .leftJoin('message.sender', 'sender')
+        .addSelect([
+          'message.id',
+          'message.message',
+          'message.createdAt',
+          'sender.id',
+        ])
+        .where('chat.id = :id', { id: existingChat.id })
+        .getOne();
+      return {
+        status: 'success',
+        message: 'Chat already exists',
+        data: { ...chat },
+      };
     }
-
+    const existingParticipant = await this.userRepository.findOne({
+      where: { id: createChatDto.recepientId },
+    });
+    if (!existingParticipant) {
+      throw new HttpException(
+        'Recipient does not exist, make sure to pass correct recipient user',
+        HttpStatus.NOT_FOUND,
+      );
+    }
     const chat = this.chatRepository.create({
       participants: [{ id: requesterId }, { id: createChatDto.recepientId }],
       chatName,
@@ -42,6 +75,12 @@ export class ChatService {
     createChatDto: CreateChatDto,
     returnMessages: boolean = false,
   ) {
+    if (senderId === createChatDto.recepientId) {
+      throw new HttpException(
+        'You cannot create a chat with yourself',
+        HttpStatus.FORBIDDEN,
+      );
+    }
     const chatName = `chats${senderId < createChatDto.recepientId ? senderId + '_' + createChatDto.recepientId : createChatDto.recepientId + '_' + senderId}`;
     let chat = await this.chatRepository.findOne({
       where: {
@@ -52,10 +91,19 @@ export class ChatService {
       return false;
     }
     if (returnMessages) {
-      chat = await this.chatRepository.findOne({
-        where: { id: chat.id },
-        relations: ['messages', 'participants'],
-      });
+      chat = await this.chatRepository
+        .createQueryBuilder('chat')
+        .leftJoinAndSelect('chat.participants', 'participant')
+        .leftJoinAndSelect('chat.messages', 'message')
+        .leftJoin('message.sender', 'sender')
+        .addSelect([
+          'message.id',
+          'message.message',
+          'message.createdAt',
+          'sender.id',
+        ])
+        .where('chat.id = :id', { id: chat.id })
+        .getOne();
       return {
         status: 'success',
         message: 'Chat found successfully',

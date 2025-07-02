@@ -20,10 +20,17 @@ export class RepairService {
   async getAllRepairs(userId: string) {
     const user = await this.User.findOne({ where: { id: userId } });
 
-    const repairs = await this.Repair.find({
-      where: [{ workshop: user }, { user: user }],
-      relations: { user: true, workshop: true },
-    });
+    if (user.role === 'user') {
+      const repairs = await this.Repair.find({
+        where: {
+          user: { id: userId },
+        },
+        relations: {
+          user: true,
+          workshop: true,
+          products: true,
+        },
+      });
 
     if (repairs.length < 1) {
       throw new HttpException(
@@ -32,11 +39,43 @@ export class RepairService {
       );
     }
 
-    return {
-      status: 'success',
-      message: 'all repair requests has been returned successfully',
-      repairs,
-    };
+      return {
+        status: 'success',
+        message: 'all repair requests has been returned successfully',
+        repairs,
+      };
+    }
+
+    if (user.role === 'workshop') {
+      const repairs = await this.Repair.find({
+        where: {
+          user: { id: userId },
+        },
+        relations: {
+          workshop: true,
+          user: true,
+          products: true,
+        },
+      });
+
+      if (repairs.length < 1) {
+        throw new HttpException(
+          'you don\'t have any repair rquests yet',
+          HttpStatus.BAD_REQUEST
+        )
+      }
+
+      return {
+        status: 'success',
+        message: 'all repair requests has been returned successfully',
+        repairs,
+      };
+    }
+
+    throw new HttpException(
+      'there isn\'t repair repair requests',
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   // create repair request based on user and workshop on products
