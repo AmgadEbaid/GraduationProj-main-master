@@ -98,6 +98,4 @@ export class Repair {
   user: User;
   @ManyToOne(() => User, (user) => user.repair)
   workshop: User;
-  // @OneToMany(() => Product, (product) => product.repair)
-  // products: Product[]
 }

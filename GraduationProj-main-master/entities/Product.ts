@@ -4,17 +4,12 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
-  JoinColumn,
 } from 'typeorm';
-import { Order } from './Order';
 import { Review } from './review';
 import { User } from './User';
-import { OrderProduct } from './OrderProduct';
-import { Delivery } from './Delivery';
 
-import { Repair } from './Repair';
+
 export enum ProductType {
   BUY = 'buy',
   REPAIR = 'repair',
@@ -107,10 +102,4 @@ export class Product {
   
   @OneToMany(() => Review, (review) => review.product)
   review: Review[];
-
-  @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
-  orderItems: OrderProduct[];
-  @ManyToOne(() => Repair, (repair) => repair.products)
-  @JoinColumn({ name: 'repairId' })
-  repair: Repair;
 }
