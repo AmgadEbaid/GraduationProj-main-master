@@ -289,6 +289,9 @@ export class ProductService {
       products = await this.ProductRepository.createQueryBuilder('product')
         .leftJoin('product.user', 'user') // join the user relation
         .addSelect(['user.id']) // select only the user id
+        .where('product.status = :status', {
+          status: ProductStatus.AVAILABLE,
+        })
         .orderBy('RAND()')
         .skip((page - 1) * limit)
         .take(limit)
@@ -298,7 +301,7 @@ export class ProductService {
       const keywords = [
         ...new Set(searchHistories.map((history) => history.keyword)),
       ];
-      console.log('keywords', keywords);
+
       const productResults = await Promise.all(
         keywords.map(async (word) => {
           const product = await this.searchProducts(
