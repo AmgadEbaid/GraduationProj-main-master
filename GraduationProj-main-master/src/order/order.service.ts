@@ -34,7 +34,6 @@ export class OrderService {
       where: {
         id: createOrderDto.targetProductId,
         status: ProductStatus.AVAILABLE,
-      
       },
       relations: ['user'],
     });
@@ -71,10 +70,12 @@ export class OrderService {
     }
     let ordertype: orderType;
     if (!offeredProduct) ordertype = orderType.purchase;
-    else if (createOrderDto.cashAmount && offeredProduct) ordertype = orderType.exchange_plus_cash;
+    else if (createOrderDto.cashAmount && offeredProduct)
+      ordertype = orderType.exchange_plus_cash;
     else ordertype = orderType.exchange;
 
-    if (ordertype !== orderType.exchange_plus_cash) createOrderDto.cashAmount = 0;
+    if (ordertype !== orderType.exchange_plus_cash)
+      createOrderDto.cashAmount = 0;
 
     if (product.user.id === offeredProduct?.user.id) {
       throw new HttpException(
@@ -82,7 +83,7 @@ export class OrderService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    if(product.user.id === userId) {
+    if (product.user.id === userId) {
       throw new HttpException(
         `You cannot order your own product`,
         HttpStatus.BAD_REQUEST,
@@ -199,6 +200,10 @@ export class OrderService {
   async delete(id: string, userId: string) {
     const { order } = await this.checkId(id, userId);
     await this.Order.remove(order);
+    await this.Product.update(
+      { id: order.products.id },
+      { status: ProductStatus.AVAILABLE },
+    );
     return;
   }
   private async checkId(orderId: string, userId: string) {

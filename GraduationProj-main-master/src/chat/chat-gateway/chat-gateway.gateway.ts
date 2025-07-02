@@ -88,6 +88,7 @@ export class ChatGatwayGateway {
         "Can't send message into uncreated chat please create chat first",
       );
     }
+    // If the user is currently connected, send the message directly
     if (receiverSocket) {
       this.server.to(receiverSocket).emit('message', {
         senderId: userId,
@@ -101,15 +102,19 @@ export class ChatGatwayGateway {
         });
         throw new WsException('Receiver not found');
       }
-      const notification = await this.firebaseService.sendNotification(
-        receiverUser.fcmToken,
-        'New message',
-        content,
-        {
-          senderId: userId,
-          chatId: chat.data.id,
-        },
-      );
+      try {
+        const notification = await this.firebaseService.sendNotification(
+          receiverUser.fcmToken,
+          'New message',
+          content,
+          {
+            senderId: userId,
+            chatId: chat.data.id,
+          },
+        );
+      } catch (error) {
+        console.error('Error sending notification:', error);
+      }
     }
     const message = await this.messageService.create(
       {

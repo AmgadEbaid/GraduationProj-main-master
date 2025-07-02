@@ -26,6 +26,7 @@ import { SearchHistory } from 'entities/SearchHistory';
 import { SearchHistoryModule } from './search-history/search-history.module';
 import { RepairModule } from './repair/repair.module';
 import { Repair } from 'entities/Repair';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { Repair } from 'entities/Repair';
     FirebaseModule,
     SearchHistoryModule,
     RepairModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [
