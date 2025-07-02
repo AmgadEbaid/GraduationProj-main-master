@@ -1,17 +1,20 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Product, ProductStatus } from 'entities/Product';
+import { Product } from 'entities/Product';
 import { Repair, RepairStatus } from 'entities/Repair';
 import { Roles, User } from 'entities/User';
 import { Repository } from 'typeorm';
 import { CreateRepairDto } from './dto/create-repair.dto';
+import { MulterS3File } from 'src/user/interface/multer-s3.interface';
+import { deleteFileFromS3 } from 'src/aws/s3DeleteFile';
+import { Delivery, DeliveryType } from 'entities/Delivery';
 
 @Injectable()
 export class RepairService {
   constructor(
     @InjectRepository(Repair) private readonly Repair: Repository<Repair>,
-    @InjectRepository(Product) private readonly Product: Repository<Product>,
     @InjectRepository(User) private readonly User: Repository<User>,
+    @InjectRepository(Delivery) private readonly Delivery: Repository<Delivery>,
   ) {}
 
   // get repair requests based on user role
@@ -20,7 +23,7 @@ export class RepairService {
 
     const repairs = await this.Repair.find({
       where: [{ workshop: user }, { user: user }],
-      relations: { user: true, workshop: true, products: true },
+      relations: { user: true, workshop: true },
     });
 
     if (repairs.length < 1) {
@@ -42,40 +45,22 @@ export class RepairService {
     body: CreateRepairDto,
     userId: string,
     workshopId: string,
+    file: MulterS3File,
   ) {
-    const { cost, products } = body;
+    const { productType, productCondition, description, expectedPrice } = body;
+
+    if (!file) {
+      throw new HttpException(
+        "please upload product's image first",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (userId === workshopId)
       throw new HttpException(
         "you can't make that repair request",
         HttpStatus.BAD_REQUEST,
       );
-
-    const productsArray: Product[] = [];
-    for (const productId of products) {
-      const product = await this.Product.findOne({ where: { id: productId } });
-      if (!product) {
-        throw new HttpException(
-          "one/all of these products aren't exist",
-          HttpStatus.NOT_IMPLEMENTED,
-        );
-      }
-
-      if (
-        product.status === ProductStatus.ON_HOLD ||
-        product.status !== ProductStatus.AVAILABLE
-      ) {
-        throw new HttpException(
-          `the ${product.name} product is ${product.status} so, you can\'t handle it`,
-          HttpStatus.NOT_IMPLEMENTED,
-        );
-      }
-
-      product.status = ProductStatus.ON_HOLD;
-      await this.Product.save(product);
-
-      productsArray.push(product);
-    }
 
     const user = await this.User.findOne({
       where: {
@@ -99,15 +84,18 @@ export class RepairService {
     const repair = new Repair();
     repair.user = user;
     repair.workshop = workshop;
-    repair.products = productsArray;
-    repair.cost = cost;
+    repair.cost = expectedPrice;
+    repair.imageUrl = file.location;
+    repair.productType = productType;
+    repair.productCondition = productCondition;
+    repair.description = description || '';
 
     await this.Repair.save(repair);
 
     return {
       status: 'success',
       message: 'repair request has been created successfully',
-      data: repair,
+      repair,
     };
   }
 
@@ -121,12 +109,18 @@ export class RepairService {
 
     if (user.role !== 'workshop') {
       throw new HttpException(
-        "you don\'t have the access on products repairing",
+        "you don\'t have the access on product repairing",
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const repair = await this.Repair.findOne({ where: { repairId } });
+    const repair = await this.Repair.findOne({
+      where: { repairId },
+      relations: {
+        user: true,
+        workshop: true,
+      },
+    });
 
     if (!repair) {
       throw new HttpException(
@@ -148,57 +142,26 @@ export class RepairService {
       );
     }
 
+    if (repair.status === status) {
+      throw new HttpException(
+        `the product is already ${repair.status}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     if (status === RepairStatus.Rejected) {
-      await this.Repair.update(
-        { repairId },
-        {
-          status,
-          updatedAt: new Date().toLocaleString(),
-        },
-      );
+      await this.Repair.delete({ repairId });
 
-      const repair = await this.Repair.findOne({
-        where: { repairId },
-        relations: { products: true },
-      });
-
-      for (const product of repair.products) {
-        product.status = ProductStatus.AVAILABLE;
-        await this.Product.save(product);
-      }
+      const filekey = await repair.imageUrl.split('/').pop();
+      await deleteFileFromS3(filekey);
 
       return {
         status: 'success',
-        message: 'your repair request has been rejected',
+        message: 'your repair request has been rejected and deleted',
       };
     }
 
-    if (status === RepairStatus.Fullfilled) {
-      await this.Repair.update(
-        { repairId },
-        {
-          status,
-          updatedAt: new Date().toLocaleString(),
-        },
-      );
-
-      const repair = await this.Repair.findOne({
-        where: { repairId },
-        relations: { products: true },
-      });
-
-      for (const product of repair.products) {
-        product.status = ProductStatus.Repaired;
-        await this.Product.save(product);
-      }
-
-      return {
-        status: 'success',
-        message: "you've finished your repairing request successfully",
-      };
-    }
-
-    // repair request accepting
+    // accept and fullfilled status updating
     await this.Repair.update(
       { repairId },
       {
@@ -207,9 +170,30 @@ export class RepairService {
       },
     );
 
+    const deliveryUser = await this.User.findOne({
+      where: { email: repair.user.email },
+    });
+    const WorkshopCom = await this.User.findOne({
+      where: { email: repair.workshop.email },
+    });
+    const deliveryCom = await this.User.findOne({
+      where: { role: Roles.Delivery },
+    });
+
+    const delivery = new Delivery();
+    delivery.cost = 50;
+    delivery.deliveryDays = 3;
+    delivery.productType = repair.productType;
+    delivery.imageUrl = repair.imageUrl;
+    delivery.deliveryType = status === 'accepted'? DeliveryType.Receive: DeliveryType.Deliver;
+    delivery.user = deliveryUser;
+    delivery.workshop = WorkshopCom;
+    delivery.delivery = deliveryCom;
+    await this.Delivery.save(delivery);
+
     return {
       status: 'success',
-      message: 'your repair request has been updated successfully',
+      message: 'your repair request has been accepted and waited for delivery',
     };
   }
 
@@ -226,10 +210,10 @@ export class RepairService {
 
     const repair = await this.Repair.findOne({
       where: { repairId },
-      relations: {
-        products: true,
-      },
     });
+
+    const filekey = await repair.imageUrl.split('/').pop();
+    await deleteFileFromS3(filekey);
 
     if (!repair) {
       throw new HttpException(
@@ -245,13 +229,12 @@ export class RepairService {
       );
     }
 
-    await this.Product.update({ repair }, { repair: null });
     await this.Repair.delete({ repairId, status: RepairStatus.Pending });
 
     return {
       status: 'success',
       message: 'repair request has been cancelled & deleted successfully',
-      deletedRepair: repair,
+      canceledRepair: repair,
     };
   }
 }

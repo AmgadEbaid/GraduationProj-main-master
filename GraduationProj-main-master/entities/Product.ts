@@ -11,7 +11,6 @@ import { Order } from './Order';
 import { Review } from './review';
 import { User } from './User';
 import { OrderProduct } from './OrderProduct';
-import { Repair } from './Repair';
 import { Delivery } from './Delivery';
 
 export enum ProductType {
@@ -110,10 +109,10 @@ export class Product {
 
   @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
   orderItems: OrderProduct[];
-  @ManyToOne(() => Repair, (repair) => repair.products)
-  @JoinColumn({ name: 'repairId' })
-  repair: Repair;
-  @ManyToOne(() => Delivery, (delivery) => delivery.products)
-  @JoinColumn({ name: 'deliveryId' })
-  delivery: Delivery;
+  // @ManyToOne(() => Repair, (repair) => repair.products)
+  // @JoinColumn({ name: 'repairId' })
+  // repair: Repair;
+  // @ManyToOne(() => Delivery, (delivery) => delivery.products)
+  // @JoinColumn({ name: 'deliveryId' })
+  // delivery: Delivery;
 }

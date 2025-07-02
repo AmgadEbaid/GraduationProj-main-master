@@ -6,9 +6,10 @@ import { Repair } from 'entities/Repair';
 import { User } from 'entities/User';
 import { Product } from 'entities/Product';
 import { JwtModule } from '@nestjs/jwt';
+import { Delivery } from 'entities/Delivery';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Repair, User, Product]), JwtModule],
+  imports: [TypeOrmModule.forFeature([Repair, User, Product, Delivery]), JwtModule],
   providers: [RepairService],
   controllers: [RepairController]
 })

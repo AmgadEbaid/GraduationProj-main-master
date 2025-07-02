@@ -1,14 +1,16 @@
-import { Column, Entity, OneToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Product } from "./Product";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./User";
 import { PaymentMethod, PaymentStatus } from "./Repair";
 
 export enum DeliveryStatus {
     Pending = 'pending',
-    Proposed = 'proposed',
     onDelivering = 'onDelivering',
     Delivered = 'delivered',
-    Rejected = 'rejected'
+}
+
+export enum DeliveryType {
+    Receive = 'receive',
+    Deliver = 'deliver'
 }
 
 @Entity()
@@ -17,23 +19,24 @@ export class Delivery {
     @PrimaryGeneratedColumn('uuid')
     deliveryId: string;
 
-    @Column()
-    title: string;
+    @Column({ nullable: false })
+    productType: string;
 
     @Column({ nullable: false })
-    recipientName: string;
-
-    @Column({ nullable: false })
-    recipientPhone: string;
-
-    @Column({ nullable: false })
-    address: string;
+    imageUrl: string;
     
     @Column({ nullable: true })
     cost: number;
     
     @Column({ nullable: true })
     deliveryDays: number;
+
+    @Column({ 
+        type: 'enum',
+        enum: DeliveryType,
+        default: DeliveryType.Receive
+    })
+    deliveryType: DeliveryType;
     
     @Column({
         type: 'enum',
@@ -63,12 +66,12 @@ export class Delivery {
 
     @Column({ default: new Date().toLocaleString() })
     updateAt: string;
-
-    // Relations
-    @OneToMany(() => Product, (product) => product.delivery)
-    products: Product[];
+    
     @ManyToOne(() => User, (user) => user.deliveries)
-    delivery: User;
+    user: User;
     @ManyToOne(() => User, (user) => user.deliveries)
     workshop: User;
+    @ManyToOne(() => User, (user) => user.deliveries)
+    @JoinColumn({ name: "deliveryComId" })
+    delivery: User;
 }

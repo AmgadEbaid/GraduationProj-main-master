@@ -1,16 +1,24 @@
-import { ArrayMinSize, IsArray, IsNotEmpty, IsNumber } from "class-validator";
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { ConditionType, ProductCategories } from "entities/Product";
 
 export class CreateRepairDto {
 
     @IsNotEmpty()
-    @IsNumber({ allowNaN: false })
-    cost: number;
+    @IsString()
+    @IsEnum(ProductCategories)
+    productType: ProductCategories;
 
     @IsNotEmpty()
-    @IsArray()
-    @ArrayMinSize(1, {
-        message: 'please select at least one product'
-    })
-    products: string[]
+    @IsString()
+    @IsEnum(ConditionType)
+    productCondition: ConditionType;
+
+    @IsOptional()
+    @IsString()
+    description: string;
+
+    @IsNotEmpty()
+    @IsString()
+    expectedPrice: string;
 
 }
