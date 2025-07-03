@@ -119,7 +119,6 @@ export class DeliveryService {
       );
     }
 
-    // await this.Product.update({ delivery }, { delivery: null });
     await this.Delivery.delete({ deliveryId });
 
     return {

@@ -18,62 +18,29 @@ export class RepairService {
 
   // get repair requests based on user role
   async getAllRepairs(userId: string) {
+
     const user = await this.User.findOne({ where: { id: userId } });
 
-    if (user.role === 'user') {
-      const repairs = await this.Repair.find({
-        where: {
-          user: { id: userId },
-        },
-        relations: {
-          user: true,
-          workshop: true,
-        },
-      });
+    const repairs = await this.Repair.find({
+      where: [{ workshop: user }, { user: user },],
+      relations: {
+        user: true,
+        workshop: true,
+      },
+    });
 
     if (repairs.length < 1) {
       throw new HttpException(
-        "you don't have any repair rquests yet",
+        "you don't have any delivery requests",
         HttpStatus.BAD_REQUEST,
       );
     }
 
-      return {
-        status: 'success',
-        message: 'all repair requests has been returned successfully',
-        repairs,
-      };
-    }
-
-    if (user.role === 'workshop') {
-      const repairs = await this.Repair.find({
-        where: {
-          user: { id: userId },
-        },
-        relations: {
-          workshop: true,
-          user: true,
-        },
-      });
-
-      if (repairs.length < 1) {
-        throw new HttpException(
-          'you don\'t have any repair rquests yet',
-          HttpStatus.BAD_REQUEST
-        )
-      }
-
-      return {
-        status: 'success',
-        message: 'all repair requests has been returned successfully',
-        repairs,
-      };
-    }
-
-    throw new HttpException(
-      'there isn\'t repair repair requests',
-      HttpStatus.BAD_REQUEST,
-    );
+    return {
+      status: 'success',
+      message: `your ${user.role} requests have been returned successfully`,
+      repairs,
+    };
   }
 
   // create repair request based on user and workshop on products
