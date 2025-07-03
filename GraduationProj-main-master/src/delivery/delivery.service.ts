@@ -78,6 +78,13 @@ export class DeliveryService {
     const { status } = body;
     const currentStatus = delivery.status;
 
+    if (currentStatus === status) {
+      throw new HttpException(
+        `the product is already ${delivery.status}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     if (currentStatus === 'pending' && status === DeliveryStatus.onDelivering) {
       delivery.status = status;
       console.log(order);
