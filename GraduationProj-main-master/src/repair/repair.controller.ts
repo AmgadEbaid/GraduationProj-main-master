@@ -41,8 +41,8 @@ export class RepairController {
           key: (req, file, cb) => {
             const timestamp = Date.now();
             const fileExtension = file.originalname.split('.').pop();
-            const filename = `product-${timestamp}.${fileExtension}`;
-            cb(null, `${process.env.AWS_PRODCUT_IMAGES_NAME}/${filename}`);
+            const filename = `repair-${timestamp}.${fileExtension}`;
+            cb(null, `${process.env.AWS_REPAIR_IMAGES_NAME}/${filename}`);
           },
         }),
         limits: { fileSize: 5 * 1024 * 1024 }, // Optional: 5MB max
