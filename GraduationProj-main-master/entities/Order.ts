@@ -20,18 +20,11 @@ export enum OrderStatus {
   PENDING = 'pending', // New order, awaiting payment or confirmation
   AWAITING_PAYMENT = 'awaiting_payment', // If payment is not immediate
   CONFIRMED = 'confirmed', // Order accepted, payment verified (if applicable)
-  PROCESSING = 'processing', // Order is being prepared by the seller (items picked, etc.)
-  AWAITING_SHIPMENT = 'awaiting_shipment', // Order is packed, labeled, ready for carrier pickup
-  SHIPPED = 'shipped', // Order handed over to the carrier for delivery
+ 
   // After this, shippingStatus takes over for the journey.
   // Then, once shippingStatus.Delivered:
   COMPLETED = 'completed', // Order delivered and considered finished.
-  PARTIALLY_SHIPPED = 'partially_shipped', // If an order can have multiple shipments
-  RETURN_REQUESTED = 'return_requested', // Customer initiated a return
-  RETURN_PROCESSING = 'return_processing', // Return received, being inspected
-  RETURNED_COMPLETED = 'returned_completed', // Return fully processed (refund/exchange done)
   REJECTED = 'rejected',
-  CANCELLED = 'cancelled',
 }
 export enum paid_status {
   paid = 'paid',
@@ -51,7 +44,6 @@ export enum shippingStatus {
 }
 
 @Entity({ name: 'orders' })
-@Entity({ name: 'order' })
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;

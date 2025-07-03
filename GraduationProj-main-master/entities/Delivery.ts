@@ -9,6 +9,7 @@ import {
 import { User } from './User';
 import { PaymentMethod, PaymentStatus } from './Repair';
 import { Order } from './Order';
+import { Product } from './Product';
 
 export enum DeliveryStatus {
   Pending = 'pending',
@@ -81,9 +82,15 @@ export class Delivery {
   FROM_USER: User;
   @ManyToOne(() => User, (user) => user.deliveries, { nullable: true })
   workshop: User;
-
-
-
+  @OneToOne(() => Order, {nullable: true})
+  @JoinColumn()
+  order: Order;
+  @OneToOne(() => Product, { nullable: true })
+  @JoinColumn()
+  targetpro: Product;
+    @OneToOne(() => Product, { nullable: true })
+  @JoinColumn()
+  offeredofferedProduct: Product;
   @ManyToOne(() => User, (user) => user.deliveries)
   @JoinColumn({ name: 'deliveryComId' })
   delivery: User;

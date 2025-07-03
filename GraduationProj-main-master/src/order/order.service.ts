@@ -234,6 +234,11 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
+    if (order.status === OrderStatus.REJECTED) {
+      throw new BadRequestException(
+        'Cannot update status of a rejected order',
+      );
+    }
 
     // Get both the seller and the order's customer
     const seller = await this.User.findOne({ where: { id: userId } });
@@ -258,12 +263,8 @@ export class OrderService {
     // Define valid status transitions based on current status
     const validTransitions = {
       [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.REJECTED],
-      [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING],
-      [OrderStatus.PROCESSING]: [OrderStatus.AWAITING_SHIPMENT],
-      [OrderStatus.AWAITING_SHIPMENT]: [OrderStatus.CONFIRMED], // Seller can put back to confirmed if needed
       [OrderStatus.COMPLETED]: [], // Final state
       [OrderStatus.REJECTED]: [], // Final state
-      [OrderStatus.CANCELLED]: [], // Final state
     };
 
     if (!validTransitions[order.status]?.includes(status)) {
@@ -273,16 +274,7 @@ export class OrderService {
           errorMessage =
             'Order can only be Confirmed or Rejected from Pending status';
           break;
-        case OrderStatus.CONFIRMED:
-          errorMessage = 'Confirmed order must be moved to Processing status';
-          break;
-        case OrderStatus.PROCESSING:
-          errorMessage =
-            'Processing order must be moved to Awaiting Shipment status when ready for pickup';
-          break;
-        case OrderStatus.AWAITING_SHIPMENT:
-          errorMessage = 'You can move the order back to Confirmed if needed';
-          break;
+
         default:
           errorMessage = `Cannot change status from ${order.status} to ${status}`;
       }
@@ -290,7 +282,6 @@ export class OrderService {
     }
 
     const deleveryman = await this.User.findOne({
-
       where: { id: order.deliveryman?.id, role: Roles.Delivery },
     });
 
@@ -298,47 +289,44 @@ export class OrderService {
       where: { id: order.products.user.id },
     });
 
-
-    // Update timestamps and status
-    switch (status) {
-      case OrderStatus.CONFIRMED:
-        order.confirmedAt = new Date();
-        break;
-      case OrderStatus.REJECTED:
-        order.cancelledAt = new Date();
-        break;
-      case OrderStatus.AWAITING_SHIPMENT:
+    if (
+      status === OrderStatus.CONFIRMED &&
+      order.shippingStatus === shippingStatus.Pending
+    ) {
+      const delivery = new Delivery();
+      delivery.cost = 50;
+      delivery.deliveryDays = 3;
+      delivery.productType = order.type;
+      delivery.imageUrl = order.products.imageUrl;
+      delivery.deliveryType = DeliveryType.Receive;
+      delivery.user = order.user;
+      delivery.delivery = deleveryman;
+      delivery.FROM_USER = sellerman;
+      delivery.order = order;
+      delivery.targetpro = order.products;
+      await this.Delivery.save(delivery);
+      if (order.offeredProduct) {
         const delivery = new Delivery();
-            delivery.cost = 50;
-            delivery.deliveryDays = 3;
-            delivery.productType = order.type;
-            delivery.imageUrl = order.products.imageUrl;
-            delivery.deliveryType =  DeliveryType.Receive;
-            delivery.user = order.user;
-            delivery.delivery = deleveryman;
-            delivery.FROM_USER = sellerman;
-            await this.Delivery.save(delivery);
-            if (order.offeredProduct) {
-              const delivery = new Delivery();
-            delivery.cost = 50;
-            delivery.deliveryDays = 3;
-            delivery.productType = order.type;
-            delivery.imageUrl = order.offeredProduct.imageUrl;
-            delivery.deliveryType =  DeliveryType.Receive;
-            delivery.user = sellerman;
-            delivery.delivery = deleveryman;
-            delivery.FROM_USER = order.products.user;
-            await this.Delivery.save(delivery);
-            }
-        break;
+        delivery.cost = 50;
+        delivery.deliveryDays = 3;
+        delivery.productType = order.type;
+        delivery.imageUrl = order.offeredProduct.imageUrl;
+        delivery.deliveryType = DeliveryType.Receive;
+        delivery.user = sellerman;
+        delivery.delivery = deleveryman;
+        delivery.FROM_USER = order.user;
+        delivery.offeredofferedProduct = order.offeredProduct;
+        await this.Delivery.save(delivery);
+      }
     }
-    console.log('status', status);
+
     order.status = status;
 
     if (status === OrderStatus.REJECTED) {
       // Handle rejection - return points and make products available
       customer.points += order.usedPoints;
       await this.User.save(customer);
+      // Clear the offered product reference
 
       await this.Product.update(
         { id: order.products.id },
@@ -351,6 +339,9 @@ export class OrderService {
           { status: ProductStatus.AVAILABLE },
         );
       }
+      order.products = null; // Clear the product reference
+      order.offeredProduct = null;
+      await this.Order.save(order);
     }
 
     // Always give new points for confirmed orders
@@ -363,7 +354,6 @@ export class OrderService {
     return order;
   }
 
-  
   async getOrderDetails(orderId: string) {
     const order = await this.Order.findOne({
       where: { id: orderId },
