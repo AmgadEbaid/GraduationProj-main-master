@@ -6,9 +6,10 @@ import { Delivery } from 'entities/Delivery';
 import { JwtModule } from '@nestjs/jwt';
 import { User } from 'entities/User';
 import { Product } from 'entities/Product';
+import { Order } from 'entities/Order';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Delivery, User, Product]), JwtModule],
+  imports: [TypeOrmModule.forFeature([Delivery, User, Product,Order]), JwtModule],
   providers: [DeliveryService],
   controllers: [DeliveryController],
 })

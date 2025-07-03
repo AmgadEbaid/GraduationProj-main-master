@@ -18,12 +18,14 @@ import {
 import { Not, Repository } from 'typeorm';
 import { Product, ProductStatus } from 'entities/Product';
 import { Roles, User } from 'entities/User';
+import { Delivery, DeliveryType } from 'entities/Delivery';
 
 @Injectable()
 export class OrderService {
   @InjectRepository(Order) private Order: Repository<Order>;
   @InjectRepository(Product) private Product: Repository<Product>;
   @InjectRepository(User) private User: Repository<User>;
+  @InjectRepository(Delivery) private Delivery: Repository<Delivery>;
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
     let price: number = 0;
@@ -287,6 +289,16 @@ export class OrderService {
       throw new BadRequestException(errorMessage);
     }
 
+    const deleveryman = await this.User.findOne({
+
+      where: { id: order.deliveryman?.id, role: Roles.Delivery },
+    });
+
+    const sellerman = await this.User.findOne({
+      where: { id: order.products.user.id },
+    });
+
+
     // Update timestamps and status
     switch (status) {
       case OrderStatus.CONFIRMED:
@@ -296,7 +308,28 @@ export class OrderService {
         order.cancelledAt = new Date();
         break;
       case OrderStatus.AWAITING_SHIPMENT:
-        order.shippingStatus = shippingStatus.AWAITING_FULFILLMENT;
+        const delivery = new Delivery();
+            delivery.cost = 50;
+            delivery.deliveryDays = 3;
+            delivery.productType = order.type;
+            delivery.imageUrl = order.products.imageUrl;
+            delivery.deliveryType =  DeliveryType.Receive;
+            delivery.user = order.user;
+            delivery.delivery = deleveryman;
+            delivery.FROM_USER = sellerman;
+            await this.Delivery.save(delivery);
+            if (order.offeredProduct) {
+              const delivery = new Delivery();
+            delivery.cost = 50;
+            delivery.deliveryDays = 3;
+            delivery.productType = order.type;
+            delivery.imageUrl = order.offeredProduct.imageUrl;
+            delivery.deliveryType =  DeliveryType.Receive;
+            delivery.user = sellerman;
+            delivery.delivery = deleveryman;
+            delivery.FROM_USER = order.products.user;
+            await this.Delivery.save(delivery);
+            }
         break;
     }
     console.log('status', status);
@@ -330,218 +363,7 @@ export class OrderService {
     return order;
   }
 
-  async delverymanAcceptOrder(orderId: string, deliveryman: User) {
-    deliveryman = await this.User.findOne({
-      where: { id: deliveryman.id, role: Roles.Delivery },
-    });
-    if (!deliveryman) {
-      throw new NotFoundException('Deliveryman not found');
-    }
-
-    const order = await this.Order.findOne({
-      where: { id: orderId, deliveryman: null },
-      relations: ['products', 'user'],
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found or already accepted');
-    }
-
-    if (order.status !== OrderStatus.AWAITING_SHIPMENT) {
-      throw new BadRequestException('Order is not not ready for shipment yet');
-    }
-
-    order.deliveryman = deliveryman;
-    order.status = OrderStatus.SHIPPED;
-    order.shippingStatus = shippingStatus.DISPATCHED_FOR_PICKUP;
-
-    await this.Order.save(order);
-    return {
-      data: order,
-    };
-  }
-
-  async updateDeliveryStatus(
-    orderId: string,
-    deliverymanId: string,
-    newShippingStatus: shippingStatus,
-  ) {
-    const order = await this.Order.findOne({
-      where: { id: orderId },
-      relations: ['deliveryman', 'offeredProduct'],
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    // Check if this delivery person is assigned to this order
-    if (!order.deliveryman || order.deliveryman.id !== deliverymanId) {
-      throw new ForbiddenException(
-        'You are not authorized to update this order - not assigned to you',
-      );
-    }
-
-    // Special statuses that can be set at any time
-    const specialStatuses = [
-      shippingStatus.DELAYED,
-      shippingStatus.LOST,
-      shippingStatus.CANCELLED,
-    ];
-
-    // Check if the new status is RETURNED_TO_SENDER
-    if (newShippingStatus === shippingStatus.RETURNED_TO_SENDER) {
-      // Only allow if current status is one of delayed, cancelled, or lost
-      const validPreviousStates = [
-        shippingStatus.DELAYED,
-        shippingStatus.CANCELLED,
-        shippingStatus.LOST,
-      ];
-      if (!validPreviousStates.includes(order.shippingStatus)) {
-        throw new BadRequestException(
-          'Order can only be returned to sender from delayed, cancelled, or lost status',
-        );
-      }
-    }
-    // If the new status is a special status, allow it
-    else if (specialStatuses.includes(newShippingStatus)) {
-      // Allow the status change
-    }
-    // Handle normal flow for purchase orders
-    else if (order.type === orderType.purchase) {
-      const purchaseFlow = {
-        [shippingStatus.DISPATCHED_FOR_PICKUP]: [shippingStatus.PICKED_UP],
-        [shippingStatus.PICKED_UP]: [shippingStatus.LEFT_CARRIER_LOCATION],
-        [shippingStatus.LEFT_CARRIER_LOCATION]: [shippingStatus.IN_TRANSIT],
-        [shippingStatus.IN_TRANSIT]: [
-          shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY,
-        ],
-        [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [
-          shippingStatus.OUT_FOR_DELIVERY,
-        ],
-        [shippingStatus.OUT_FOR_DELIVERY]: [
-          shippingStatus.AVAILABLE_FOR_PICKUP,
-        ],
-        [shippingStatus.AVAILABLE_FOR_PICKUP]: [shippingStatus.DELIVERED],
-      };
-
-      if (!purchaseFlow[order.shippingStatus]?.includes(newShippingStatus)) {
-        throw new BadRequestException(
-          `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus} for purchase order`,
-        );
-      }
-    }
-    // Handle flow for exchange orders
-    else if (
-      order.type === orderType.exchange ||
-      order.type === orderType.exchange_plus_cash
-    ) {
-      const exchangeFlow = {
-        [shippingStatus.AVAILABLE_FOR_PICKUP]: [
-          shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP,
-        ],
-        [shippingStatus.target_Product_DELIVERED__offered_Produc_PICKED_UP]: [
-          shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER,
-        ],
-        [shippingStatus.offeredProduc_IN_TRANSIT_TO_SELLER]: [
-          shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY,
-        ],
-        [shippingStatus.offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY]: [
-          shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER,
-        ],
-        [shippingStatus.offeredProduc_OUT_FOR_DELIVERY_TO_SELLER]: [
-          shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED,
-        ],
-      };
-
-      // For exchange orders, use the exchange flow after AVAILABLE_FOR_PICKUP
-      if (
-        order.shippingStatus === shippingStatus.AVAILABLE_FOR_PICKUP ||
-        Object.keys(exchangeFlow).includes(order.shippingStatus)
-      ) {
-        if (!exchangeFlow[order.shippingStatus]?.includes(newShippingStatus)) {
-          throw new BadRequestException(
-            `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus} for exchange order`,
-          );
-        }
-      } else {
-        // Before AVAILABLE_FOR_PICKUP, use the same flow as purchase orders
-        const initialFlow = {
-          [shippingStatus.DISPATCHED_FOR_PICKUP]: [shippingStatus.PICKED_UP],
-          [shippingStatus.PICKED_UP]: [shippingStatus.LEFT_CARRIER_LOCATION],
-          [shippingStatus.LEFT_CARRIER_LOCATION]: [shippingStatus.IN_TRANSIT],
-          [shippingStatus.IN_TRANSIT]: [
-            shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY,
-          ],
-          [shippingStatus.ARRIVED_AT_LOCAL_DELIVERY_FACILITY]: [
-            shippingStatus.OUT_FOR_DELIVERY,
-          ],
-          [shippingStatus.OUT_FOR_DELIVERY]: [
-            shippingStatus.AVAILABLE_FOR_PICKUP,
-          ],
-        };
-
-        if (!initialFlow[order.shippingStatus]?.includes(newShippingStatus)) {
-          throw new BadRequestException(
-            `Invalid status transition from ${order.shippingStatus} to ${newShippingStatus}`,
-          );
-        }
-      }
-    }
-
-    // Update the shipping status
-    order.shippingStatus = newShippingStatus;
-
-    // Update order status and timestamp for final states
-    if (
-      newShippingStatus === shippingStatus.DELIVERED ||
-      newShippingStatus ===
-        shippingStatus.EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED
-    ) {
-      order.status = OrderStatus.COMPLETED;
-      order.deliveredAt = new Date();
-    }
-
-    await this.Order.save(order);
-
-    return {
-      status: 'success',
-      message: `Shipping status updated to ${newShippingStatus}`,
-      data: order,
-    };
-  }
-
-  async findAvailableOrdersForDelivery() {
-    const orders = await this.Order.find({
-      where: {
-        status: OrderStatus.AWAITING_SHIPMENT,
-        deliveryman: null,
-      },
-      relations: [
-        'products',
-        'user',
-        'user.addresses', // Include delivery address
-      ],
-      order: {
-        createdAt: 'ASC', // Oldest orders first
-      },
-    });
-
-    if (!orders.length) {
-      return {
-        status: 'success',
-        message: 'No orders available for delivery at the moment',
-        data: [],
-      };
-    }
-
-    return {
-      status: 'success',
-      message: 'Found orders ready for delivery',
-      data: orders,
-    };
-  }
-
+  
   async getOrderDetails(orderId: string) {
     const order = await this.Order.findOne({
       where: { id: orderId },

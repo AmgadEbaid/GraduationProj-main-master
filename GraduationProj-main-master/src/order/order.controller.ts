@@ -96,28 +96,9 @@ export class OrderController {
     return this.orderService.getOrderDetails(orderId);
   }
 
-  @Post(':orderId/accept-delivery')
-  async acceptDeliveryOrder(
-    @Param('orderId') orderId: string,
-    @Req() req: Request,
-  ) {
-    const deliveryman = req['user'] as any;
-    return this.orderService.delverymanAcceptOrder(orderId, deliveryman);
-  }
 
-  @Patch(':orderId/delivery-status')
-  async updateDeliveryStatus(
-    @Param('orderId') orderId: string,
-    @Body() body: updateShipmentStatusDto, 
-    @Req() req: Request,
-  ) {
-    const user = req['user'] as any;
-    const newStatus = body.status as shippingStatus;
-    return this.orderService.updateDeliveryStatus(orderId, user.id,newStatus);
-  }
 
-  @Get('available-for-delivery')
-  async findAvailableOrdersForDelivery() {
-    return this.orderService.findAvailableOrdersForDelivery();
-  }
+
+
+
 }

@@ -45,37 +45,9 @@ export enum paymentMethod {
 }
 
 export enum shippingStatus {
-  AWAITING_FULFILLMENT = 'Awaiting Fulfillment', // Seller needs to prepare the order for shipping
-  LABEL_CREATED = 'Label Created', // Shipping label generated, package ready, awaiting carrier
-  // Pending = 'Pending', // Could replace AWAITING_FULFILLMENT or LABEL_CREATED if you prefer fewer states
-  DISPATCHED_FOR_PICKUP = 'Dispatched for Pickup', // Your existing good one
-  PICKED_UP = 'Picked Up', // Value changed for consistency
-  // ... rest of your good statuses, maybe with consistent casing for values if desired
-  LEFT_CARRIER_LOCATION = 'Left Carrier Location',
-  IN_TRANSIT = 'In Transit',
-  ARRIVED_AT_LOCAL_DELIVERY_FACILITY = 'Arrived at Local Delivery Facility',
-  OUT_FOR_DELIVERY = 'Out for Delivery',
-  AVAILABLE_FOR_PICKUP = 'Available for Pickup',
-  DELIVERY_ATTEMPTED = 'Delivery Attempted',
-  DELIVERED = 'Delivered',
-  RETURNED_TO_SENDER = 'Returned to Sender', // Slightly more explicit than just "Returned"
-  CANCELLED = 'Cancelled', // Value changed for consistency
-  DELAYED = 'Delayed', // Value changed for consistency
-  LOST = 'Lost', // Value changed for consistency
-
-  // Or a slightly shorter version if you prefer:
-  target_Product_DELIVERED__offered_Produc_PICKED_UP = 'P1 Delivered, P2 Pending Pickup',
-
-  // Product2 (Customer -> Seller) Journey - after pickup from customer
-  // Or more simply, if picked_up implies it's now in transit:
-  // Then you might have:
-  offeredProduc_IN_TRANSIT_TO_SELLER = 'Product2 In Transit to Seller', // If there's a distinct transit phase after pickup
-  offeredProduc_ARRIVED_AT_SELLER_LOCAL_FACILITY = 'Product2 Arrived at Seller Local Facility',
-  offeredProduc_OUT_FOR_DELIVERY_TO_SELLER = 'Product2 Out for Delivery to Seller',
-
-  // -- Final Completion --
-  // This is the new status indicating both parts of the exchange are complete.
-  EXCHANGE_COMPLETED_ALL_PRODUCTS_DELIVERED = 'Exchange Completed - All Products Delivered',
+    Pending = 'pending',
+    onDelivering = 'onDelivering',
+    Delivered = 'delivered',
 }
 
 @Entity({ name: 'orders' })
@@ -124,7 +96,7 @@ export class Order {
   @Column({
     type: 'enum',
     enum: shippingStatus,
-    default: shippingStatus.AWAITING_FULFILLMENT,
+    default: shippingStatus.Pending,
   })
   shippingStatus: shippingStatus;
 
