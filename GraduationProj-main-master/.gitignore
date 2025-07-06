@@ -60,3 +60,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Firebase service account key
 /config.env
 /furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
+./furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json
+GraduationProj-main-master/GraduationProj-main-master/furnistore-27419-firebase-adminsdk-fbsvc-fc33dfb4b6.json

@@ -292,6 +292,7 @@ export class ProductService {
         .where('product.status = :status', {
           status: ProductStatus.AVAILABLE,
         })
+        .andWhere('product.user.id != :userId', { userId })
         .orderBy('RAND()')
         .skip((page - 1) * limit)
         .take(limit)
