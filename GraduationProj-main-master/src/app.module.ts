@@ -29,6 +29,7 @@ import { Repair } from 'entities/Repair';
 import { DeliveryModule } from './delivery/delivery.module';
 import { Delivery } from 'entities/Delivery';
 import { NotificationModule } from './notification/notification.module';
+import { WorkshopModule } from './workshop/workshop.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { NotificationModule } from './notification/notification.module';
     RepairModule,
     DeliveryModule,
     NotificationModule,
+    WorkshopModule,
   ],
   controllers: [AppController],
   providers: [

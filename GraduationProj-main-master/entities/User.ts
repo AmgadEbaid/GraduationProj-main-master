@@ -89,4 +89,8 @@ export class User {
   repair: Repair[];
   @OneToMany(() => Delivery, (delivery) => delivery.workshop)
   deliveries: Delivery[];
+  @Column({ nullable: true })
+  workshopName: string; // This is the workshop ID if the user is a workshop owner
+  @Column({ nullable: true })
+  workshopSpecialization: string; // This is the workshop specialization if the user is a workshop owner
 }
