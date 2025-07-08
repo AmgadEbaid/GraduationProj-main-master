@@ -6,11 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'entities/User';
 import { Otp } from 'entities/Otp';
-import { APP_PIPE } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { Address } from 'entities/Address';
 import { Order } from 'entities/Order';
 import { Product } from 'entities/Product';
-import { AddressController } from './address/address.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { AddressModule } from './address/address.module';
 import { OrderModule } from './order/order.module';
@@ -30,9 +29,18 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { Delivery } from 'entities/Delivery';
 import { NotificationModule } from './notification/notification.module';
 import { WorkshopModule } from './workshop/workshop.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60 * 1000, // 1 minute window
+          limit: 100, // Max 100 requests per IP per minute
+        },
+      ],
+    }),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '9d' },
@@ -79,6 +87,10 @@ import { WorkshopModule } from './workshop/workshop.module';
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({

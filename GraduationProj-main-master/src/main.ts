@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import helmet from 'helmet';
 
 dotenv.config({
   path: path.join(process.cwd(), 'config.env'),
@@ -12,6 +13,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(helmet());
 
   // Enable CORS for frontend requests
   app.enableCors({
