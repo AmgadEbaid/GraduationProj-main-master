@@ -10,11 +10,12 @@ import { AppModule } from './app.module';
 import * as session from 'express-session';
 import * as passport from 'passport';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as xss from 'xss-clean';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(helmet());
-
+  app.use(xss());
   // Enable CORS for frontend requests
   app.enableCors({
     origin: ['http://localhost:3000', 'http://localhost:3002'], // Add your frontend URLs
