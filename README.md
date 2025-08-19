@@ -1,99 +1,130 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Graduation Project: E-commerce & Repair Service Marketplace
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This repository contains the back-end source code for a comprehensive e-commerce and repair service marketplace, developed as a graduation project. The platform is built with NestJS and leverages a modern, scalable architecture to provide a wide range of features for users, sellers, and administrators.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+This application is packed with features designed to provide a seamless and engaging user experience:
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Core E-commerce
 
-## Project setup
+- **Product Management:** Create, update, and manage products with details, images, and pricing.
+- **Order Processing:** A complete order workflow, from cart to checkout, with status tracking.
+- **Secure Payments:** Integration with payment gateways for secure transactions.
+- **Reviews and Ratings:** Users can leave reviews and ratings for products and services.
+- **Search Functionality:** Advanced search with filtering and sorting options.
 
-```bash
-$ npm install
-```
+### User & Authentication
 
-## Compile and run the project
+- **User Accounts:** User registration, login, and profile management.
+- **JWT-based Authentication:** Secure authentication using JSON Web Tokens.
+- **Google OAuth 2.0:** Users can sign up and log in using their Google accounts.
+- **Password Management:** Secure password hashing and a "forgot password" feature with OTP verification.
 
-```bash
-# development
-$ npm run start
+### Real-time Communication
 
-# watch mode
-$ npm run start:dev
+- **Live Chat:** Real-time chat between buyers and sellers using WebSockets.
+- **Push Notifications:** Instant notifications for order updates, messages, and other events using Firebase Cloud Messaging.
 
-# production mode
-$ npm run start:prod
-```
+### Services & More
 
-## Run tests
+- **Repair Services:** A dedicated module for users to request and manage repair services.
+- **Delivery Tracking:** Real-time tracking of deliveries and shipments.
+- **AWS S3 Integration:** Secure and scalable storage for product images and other media.
 
-```bash
-# unit tests
-$ npm run test
+## 🛠️ Tech Stack
 
-# e2e tests
-$ npm run test:e2e
+This project is built with a modern and powerful technology stack:
 
-# test coverage
-$ npm run test:cov
-```
+- **Back-end:** [NestJS](https://nestjs.com/) - A progressive Node.js framework for building efficient, reliable, and scalable server-side applications.
+- **Database:** [MySQL](https://www.mysql.com/) with [TypeORM](https://typeorm.io/) - A powerful ORM for TypeScript and JavaScript.
+- **Authentication:** [Passport.js](http://www.passportjs.org/) - A simple, unobtrusive authentication for Node.js.
+- **Real-time:** [WebSockets (Socket.IO)](https://socket.io/) - For real-time, bidirectional and event-based communication.
+- **File Storage:** [AWS S3](https://aws.amazon.com/s3/) - For scalable and secure object storage.
+- **API Documentation:** [Swagger (OpenAPI)](https://swagger.io/) - For generating interactive API documentation.
+- **Email:** [Nodemailer](https://nodemailer.com/) - For sending emails.
+- **Notifications:** [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup) - For sending push notifications.
 
-## Deployment
+## ⚙️ Getting Started
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+To get a local copy up and running, follow these simple steps.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Prerequisites
 
-```bash
-$ npm install -g mau
-$ mau deploy
-```
+- [Node.js](https://nodejs.org/en/) (v16 or later)
+- [npm](https://www.npmjs.com/)
+- [MySQL](https://www.mysql.com/)
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Installation
 
-## Resources
+1.  **Clone the repository:**
 
-Check out a few resources that may come in handy when working with NestJS:
+    ```bash
+    git clone https://github.com/your_username/GraduationProj-main-master.git
+    ```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+2.  **Navigate to the project directory:**
 
-## Support
+    ```bash
+    cd GraduationProj-main-master/GraduationProj-main-master
+    ```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+3.  **Install dependencies:**
 
-## Stay in touch
+    ```bash
+    npm install
+    ```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+4.  **Set up environment variables:**
 
-## License
+    Create a `.env` file in the root of the project and add the necessary environment variables (e.g., database credentials, JWT secret, AWS keys).
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+5.  **Run database migrations:**
+
+    ```bash
+    npm run typeorm:migration:run
+    ```
+
+### Running the Application
+
+-   **Development mode:**
+
+    ```bash
+    npm run start:dev
+    ```
+
+-   **Production mode:**
+
+    ```bash
+    npm run start:prod
+    ```
+
+## 🧪 Testing
+
+The project includes a comprehensive suite of tests to ensure code quality and reliability.
+
+-   **Run unit tests:**
+
+    ```bash
+    npm run test
+    ```
+
+-   **Run end-to-end tests:**
+
+    ```bash
+    npm run test:e2e
+    ```
+
+-   **View test coverage:**
+
+    ```bash
+    npm run test:cov
+    ```
+
+
+
+
+We are proud of the work we have accomplished and the skills we have developed throughout this project.
+
+---
+
